@@ -5,7 +5,7 @@ export default function Pricing() {
   return (
     <div className="container" style={{ padding: '6rem 0', textAlign: 'center' }}>
       <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Simple, transparent pricing.</h1>
-      <p className="text-secondary mb-8" style={{ fontSize: '1.125rem' }}>For students, Verqify is free. Always. For teams, you pay for what you need.</p>
+      <p className="text-secondary mb-8" style={{ fontSize: '1.125rem' }}>For students, Verqify is the standard for identity. For teams, you pay for what you need.</p>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '1000px', margin: '0 auto', textAlign: 'left' }}>
         <div style={{ padding: '3rem', border: '1px solid var(--color-border)', borderRadius: '8px' }}>

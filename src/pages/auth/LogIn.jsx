@@ -30,7 +30,7 @@ export default function LogIn() {
         <button type="submit" className="btn btn-secondary" style={{ width:'100%' }}>Sign In with Student ID</button>
       </form>
       <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
-        No account? <Link to="/signup" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Sign Up free</Link>
+        No account? <Link to="/signup" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Sign Up</Link>
       </p>
     </div>
   );

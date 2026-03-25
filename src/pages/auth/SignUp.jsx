@@ -16,7 +16,7 @@ export default function SignUp() {
   };
   return (
     <div>
-      <div className="badge badge-indigo" style={{ marginBottom:'1.5rem' }}>Students only · Always free</div>
+      <div className="badge badge-indigo" style={{ marginBottom:'1.5rem' }}>Students only · Verified profiles</div>
       <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Get Verified.</h1>
       <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Claim your engineering fingerprint.</p>
       <button onClick={handleGithub} className="btn btn-primary" style={{ width:'100%',marginBottom:'1.5rem',gap:'0.75rem' }}><GithubIcon /> Continue with GitHub</button>

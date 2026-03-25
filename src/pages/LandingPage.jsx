@@ -125,7 +125,7 @@ export default function LandingPage() {
         <div style={{ position:'absolute',inset:0,background:'radial-gradient(ellipse 80% 60% at 50% 50%,rgba(99,102,241,0.05),transparent)',pointerEvents:'none' }} />
         <div className="container" style={{ textAlign:'center',position:'relative',zIndex:1 }}>
           <h2 className="headline-lg animate-fade-in-up" style={{ marginBottom:'1.25rem' }}>Prove what you can build.</h2>
-          <p style={{ color:'var(--text-secondary)',fontSize:'1.1rem',maxWidth:500,margin:'0 auto 2.5rem' }}>Free for students, forever.</p>
+          <p style={{ color:'var(--text-secondary)',fontSize:'1.1rem',maxWidth:500,margin:'0 auto 2.5rem' }}>The engineering shape is yours, forever.</p>
           <div style={{ display:'flex',maxWidth:480,margin:'0 auto',gap:0 }}>
             <input className="input" placeholder="Your Student ID" style={{ borderRadius:'var(--radius-md) 0 0 var(--radius-md)',borderRight:'none' }} />
             <button className="btn btn-primary" style={{ borderRadius:'0 var(--radius-md) var(--radius-md) 0',whiteSpace:'nowrap' }}>Join Waitlist</button>
