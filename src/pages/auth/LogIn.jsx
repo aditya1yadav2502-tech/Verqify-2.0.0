@@ -18,17 +18,21 @@ export default function LogIn() {
     <div>
       <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Welcome Back.</h1>
       <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Log in to your Verqify profile.</p>
-      <button onClick={handleGithub} className="btn btn-primary" style={{ width:'100%',marginBottom:'1.5rem',gap:'0.75rem' }}><GithubIcon /> Continue with GitHub</button>
+      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={e=>e.preventDefault()}>
+        <input className="input" type="text" placeholder="College ID" />
+        <input className="input" type="password" placeholder="Your password" />
+        <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Sign In with College ID</button>
+      </form>
+
       <div style={{ display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1.5rem' }}>
         <div className="divider" style={{ flex:1,margin:0 }} />
         <span className="label">or</span>
         <div className="divider" style={{ flex:1,margin:0 }} />
       </div>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem' }} onSubmit={e=>e.preventDefault()}>
-        <input className="input" type="text" placeholder="Your Student ID" />
-        <input className="input" type="password" placeholder="Your password" />
-        <button type="submit" className="btn btn-secondary" style={{ width:'100%' }}>Sign In with Student ID</button>
-      </form>
+
+      <button onClick={handleGithub} className="btn btn-secondary" style={{ width:'100%',gap:'0.75rem' }}>
+        <GithubIcon /> Log In with GitHub
+      </button>
       <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
         No account? <Link to="/signup" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Sign Up</Link>
       </p>

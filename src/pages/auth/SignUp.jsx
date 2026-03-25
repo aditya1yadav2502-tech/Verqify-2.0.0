@@ -16,19 +16,13 @@ export default function SignUp() {
   };
   return (
     <div>
-      <div className="badge badge-indigo" style={{ marginBottom:'1.5rem' }}>Students only · Verified profiles</div>
-      <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Get Verified.</h1>
-      <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Claim your engineering fingerprint.</p>
-      <button onClick={handleGithub} className="btn btn-primary" style={{ width:'100%',marginBottom:'1.5rem',gap:'0.75rem' }}><GithubIcon /> Continue with GitHub</button>
-      <div style={{ display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1.5rem' }}>
-        <div className="divider" style={{ flex:1,margin:0 }} />
-        <span className="label">or</span>
-        <div className="divider" style={{ flex:1,margin:0 }} />
-      </div>
+      <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Join Verqify.</h1>
+      <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Sign up using your official College ID.</p>
+      <div className="badge badge-indigo" style={{ marginBottom:'1.5rem' }}>Official College ID Required</div>
       <form style={{ display:'flex',flexDirection:'column',gap:'1rem' }} onSubmit={e=>e.preventDefault()}>
-        <input className="input" type="text" placeholder="Your Student ID" />
+        <input className="input" type="text" placeholder="Enter College ID" />
         <input className="input" type="password" placeholder="Create password" />
-        <button type="submit" className="btn btn-secondary" style={{ width:'100%' }}>Continue with Student ID</button>
+        <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Create Account</button>
       </form>
       <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
         Already have an account? <Link to="/login" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Log In</Link>
