@@ -3,44 +3,53 @@ import SkillTag from '../../components/SkillTag';
 
 export default function ProofVerification() {
   return (
-    <div style={{ maxWidth: '800px' }}>
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Proof & Verification</h1>
-      <p className="text-secondary mb-8">Manage the linked accounts and documents that prove your skills.</p>
+    <div style={{ maxWidth: 960 }}>
+      <header style={{ marginBottom: '3.5rem' }}>
+        <div className="label" style={{ marginBottom: '0.5rem' }}>Trust & Verification</div>
+        <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '3rem', fontWeight: 700 }}>Proof.</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginTop: '0.5rem' }}>Manage the linked accounts and documents that prove your skills.</p>
+      </header>
 
-      <section className="mb-8">
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>Connected Accounts</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ padding: '1.5rem', border: '1px solid var(--color-border)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h4 style={{ margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>GitHub <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(0,200,83,0.1)', color: 'var(--color-verified)', padding: '0.15rem 0.4rem', borderRadius: '2px' }}>CONNECTED</span></h4>
-              <p className="text-secondary" style={{ margin: 0, fontSize: '0.875rem' }}>Last synced 2 hours ago</p>
+      <section style={{ marginBottom: '4rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 600, marginBottom: '1.5rem' }}>Connected Accounts</h2>
+        <div className="glass" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ width: 48, height: 48, background: 'var(--bg-elevated)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.2c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
             </div>
-            <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Force Sync</button>
+            <div>
+              <h4 style={{ fontFamily: 'var(--font-head)', margin: '0 0 0.25rem 0', fontWeight: 600 }}>GitHub</h4>
+              <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.9rem' }}>Synced to your engineering shape</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span className="badge badge-indigo" style={{ fontSize: '0.7rem' }}>CONNECTED</span>
+            <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Force Sync</button>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>Your Skill Tags</h2>
-        <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
+        <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 600, marginBottom: '1.5rem' }}>Your Skill Proofs</h2>
+        <div className="glass" style={{ padding: 0, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead style={{ backgroundColor: 'var(--color-bg-alt)', borderBottom: '1px solid var(--color-border)' }}>
+            <thead style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--border)' }}>
               <tr>
-                <th style={{ padding: '1rem', fontWeight: '500', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Skill</th>
-                <th style={{ padding: '1rem', fontWeight: '500', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Status</th>
-                <th style={{ padding: '1rem', fontWeight: '500', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Proof Count</th>
+                <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Skill</th>
+                <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Status</th>
+                <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Source count</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '1rem' }}><SkillTag name="Node.js" status="verified" /></td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--color-verified)', fontWeight: '500' }}>Verified</td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem' }}>4 repositories</td>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '1.25rem' }}><SkillTag name="Node.js" status="verified" /></td>
+                <td style={{ padding: '1.25rem' }}><span className="badge badge-indigo" style={{ fontSize: '0.75rem' }}>VERIFIED</span></td>
+                <td style={{ padding: '1.25rem', fontSize: '0.9rem' }}>4 repositories</td>
               </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '1rem' }}><SkillTag name="React" status="claimed" /></td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Claimed</td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem' }}>0 (Needs connected repo)</td>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '1.25rem' }}><SkillTag name="React" status="claimed" /></td>
+                <td style={{ padding: '1.25rem' }}><span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-muted)' }}>CLAIMED</span></td>
+                <td style={{ padding: '1.25rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>0 (Requires Sync)</td>
               </tr>
             </tbody>
           </table>
