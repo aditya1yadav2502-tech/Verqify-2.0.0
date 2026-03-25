@@ -3,86 +3,57 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 
+function StatCard({ num, label, trend }) {
+  return (
+    <div className="glass" style={{ padding:'2rem' }}>
+      <div className="label" style={{ marginBottom:'0.75rem' }}>{label}</div>
+      <div className="gradient-text" style={{ fontFamily:'var(--font-head)',fontSize:'3rem',fontWeight:700,lineHeight:1,marginBottom:'0.5rem' }}>{num}</div>
+      {trend && <p style={{ fontSize:'0.8rem',color:'var(--accent-green)',fontWeight:600 }}>{trend}</p>}
+    </div>
+  );
+}
+
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function getProfile() {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (data) setProfile(data);
-      setLoading(false);
-    }
-
-    getProfile();
+    if (!user || !supabase) return;
+    supabase.from('profiles').select('*').eq('id', user.id).single().then(({ data }) => { if (data) setProfile(data); });
   }, [user]);
 
-  if (loading) return <div className="container" style={{ paddingTop: '4rem' }}>Loading perspective...</div>;
-
-  const fingerprint = profile?.skill_fingerprint || [];
-  const verifiedCount = fingerprint.filter(s => s.score > 0).length;
+  const name = profile?.full_name?.split(' ')[0] || (user ? 'Engineer' : 'Preview');
 
   return (
-    <div style={{ maxWidth: '1000px' }}>
-      <header className="mb-8 pl-1">
-        <h1 className="title-section" style={{ fontSize: '3rem', marginBottom: '0.25rem' }}>
-          Welcome, {profile?.full_name?.split(' ')[0] || 'Engineer'}.
-        </h1>
-        <p className="text-secondary" style={{ fontSize: '1.125rem' }}>Your current Verqify profile status.</p>
+    <div style={{ maxWidth:960 }}>
+      <header style={{ marginBottom:'3rem' }}>
+        <div className="label" style={{ marginBottom:'0.5rem' }}>Student Dashboard</div>
+        <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2.5rem',fontWeight:700 }}>Welcome, {name}.</h1>
+        <p style={{ color:'var(--text-secondary)',marginTop:'0.25rem' }}>Your Verqify profile at a glance.</p>
       </header>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
-        <div className="card" style={{ padding: '2rem' }}>
-          <h3 style={{ fontSize: '0.8rem', fontWeight: '600', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>Completeness</h3>
-          <div style={{ fontSize: '3.5rem', fontFamily: 'var(--font-serif)', lineHeight: '1', marginBottom: '0.5rem' }}>
-            {profile?.skill_fingerprint ? '100%' : '45%'}
-          </div>
-          <p className="text-secondary" style={{ fontSize: '0.85rem' }}>
-            {profile?.skill_fingerprint ? 'Profile is verified.' : 'Generate your fingerprint to reach 100%.'}
-          </p>
-        </div>
-        <div className="card" style={{ padding: '2rem' }}>
-          <h3 style={{ fontSize: '0.8rem', fontWeight: '600', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>Profile Views <span style={{ opacity: 0.5 }}>(30d)</span></h3>
-          <div style={{ fontSize: '3.5rem', fontFamily: 'var(--font-serif)', lineHeight: '1', marginBottom: '0.5rem' }}>0</div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-verified)', fontWeight: '500' }}>Active in discoverability</p>
-        </div>
-        <div className="card" style={{ padding: '2rem' }}>
-          <h3 style={{ fontSize: '0.8rem', fontWeight: '600', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>Verified Skills</h3>
-          <div style={{ fontSize: '3.5rem', fontFamily: 'var(--font-serif)', lineHeight: '1', marginBottom: '0.5rem' }}>
-            {verifiedCount} <span style={{ fontSize: '1.25rem', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>tags</span>
-          </div>
-          <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Linked via GitHub data sync.</p>
-        </div>
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:'1.25rem',marginBottom:'3rem' }}>
+        <StatCard num={profile?.skill_fingerprint ? '100%' : '45%'} label="Completeness" trend={profile?.skill_fingerprint ? '✓ Fully verified' : undefined} />
+        <StatCard num="0" label="Profile Views (30d)" trend="↗ Discoverable" />
+        <StatCard num={profile?.skill_fingerprint?.filter(s=>s.score>0).length || 0} label="Verified Skills" />
       </div>
-
-      <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-serif)', marginBottom: '1.5rem' }}>Suggested Actions</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {!profile?.skill_fingerprint ? (
-          <div className="card" style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--color-accent)' }}>
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem' }}>Generate Skill Fingerprint</h4>
-              <p className="text-secondary" style={{ margin: 0, fontSize: '0.9rem' }}>We need to analyze your code history to build your engineering shape.</p>
-            </div>
-            <Link to="/dashboard/fingerprint" className="btn btn-accent" style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem' }}>Sync GitHub</Link>
+      <h2 style={{ fontFamily:'var(--font-head)',fontSize:'1.25rem',fontWeight:600,marginBottom:'1.25rem' }}>Suggested Actions</h2>
+      {!profile?.skill_fingerprint ? (
+        <div className="glass" style={{ padding:'1.5rem 2rem',display:'flex',justifyContent:'space-between',alignItems:'center',borderLeft:'3px solid var(--accent-indigo)' }}>
+          <div>
+            <h3 style={{ fontFamily:'var(--font-head)',marginBottom:'0.4rem' }}>Generate Skill Fingerprint</h3>
+            <p style={{ color:'var(--text-secondary)',fontSize:'0.9rem' }}>Analyze your GitHub history to reveal your engineering shape.</p>
           </div>
-        ) : (
-          <div className="card" style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem' }}>Your profile is live</h4>
-              <p className="text-secondary" style={{ margin: 0, fontSize: '0.9rem' }}>Recruiters can now discover your engineering shape.</p>
-            </div>
-            <Link to={`/s/${profile.username}`} className="btn btn-outline" style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem' }}>View Public Profile</Link>
+          <Link to="/dashboard/fingerprint" className="btn btn-primary" style={{ whiteSpace:'nowrap' }}>Sync GitHub →</Link>
+        </div>
+      ) : (
+        <div className="glass" style={{ padding:'1.5rem 2rem',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+          <div>
+            <h3 style={{ fontFamily:'var(--font-head)',marginBottom:'0.4rem' }}>Profile is live</h3>
+            <p style={{ color:'var(--text-secondary)',fontSize:'0.9rem' }}>Recruiters can discover your engineering shape.</p>
           </div>
-        )}
-      </div>
+          <Link to={`/s/${profile?.username}`} className="btn btn-secondary" style={{ whiteSpace:'nowrap' }}>View Public Profile →</Link>
+        </div>
+      )}
     </div>
   );
 }

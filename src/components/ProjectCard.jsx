@@ -10,56 +10,25 @@ const GithubIcon = ({ size }) => (
 
 export default function ProjectCard({ title, description, tags, isLive, link, githubUrl }) {
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', borderRadius: '0' }}>
+    <div className="glass" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-serif)', fontWeight: '400' }}>
-          {title}
-          {isLive && (
-            <span style={{
-              marginLeft: '0.75rem',
-              fontSize: '0.65rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: 'var(--color-verified)',
-              border: '1px solid var(--color-verified)',
-              padding: '0.15rem 0.4rem',
-              borderRadius: '0',
-              verticalAlign: 'middle'
-            }}>Live</span>
-          )}
-        </h3>
-        <div style={{ display: 'flex', gap: '0.75rem', opacity: 0.5, transition: 'opacity 0.2s' }} className="card-icons">
-          {githubUrl && (
-            <a href={githubUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-primary)' }}>
-              <GithubIcon size={18} />
-            </a>
-          )}
-          {link && (
-            <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-primary)' }}>
-              <ExternalLink size={18} />
-            </a>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <h3 style={{ fontFamily: 'var(--font-head)', fontSize: '1.1rem', fontWeight: 600 }}>{title}</h3>
+          {isLive && <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>LIVE</span>}
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--text-muted)' }}>
+          {githubUrl && <a href={githubUrl} target="_blank" rel="noopener noreferrer" style={{ transition: 'color 0.2s' }}
+            onMouseEnter={e=>e.target.style.color='var(--text-primary)'}
+            onMouseLeave={e=>e.target.style.color='var(--text-muted)'}><GithubIcon size={16} /></a>}
+          {link && <a href={link} target="_blank" rel="noopener noreferrer"
+            onMouseEnter={e=>e.style.color='var(--text-primary)'}
+            ><ExternalLink size={16} /></a>}
         </div>
       </div>
-      
-      <p className="text-secondary" style={{ fontSize: '0.95rem', marginBottom: '2rem', flex: 1 }}>
-        {description}
-      </p>
-      
-      {tags && tags.length > 0 && (
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
-          {tags.map(tag => (
-            <span key={tag} style={{
-              fontSize: '0.75rem',
-              fontWeight: '500',
-              color: 'var(--color-text-secondary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.02em'
-            }}>
-              {tag}
-            </span>
-          ))}
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.65, flex: 1, marginBottom: '1.5rem' }}>{description}</p>
+      {tags && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {tags.map(t => <span key={t} className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>{t}</span>)}
         </div>
       )}
     </div>

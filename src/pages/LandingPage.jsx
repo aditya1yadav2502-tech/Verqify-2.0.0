@@ -1,133 +1,134 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import SkillFingerprint from '../components/SkillFingerprint';
 import SkillTag from '../components/SkillTag';
 
-export default function LandingPage() {
-  const sampleSkills = [
-    { name: 'Architecture', score: 85 },
-    { name: 'Backend', score: 95 },
-    { name: 'Frontend', score: 60 },
-    { name: 'DevOps', score: 75 },
-    { name: 'Database', score: 80 },
-  ];
+const sampleSkills = [
+  { name: 'Architecture', score: 85 }, { name: 'Backend', score: 95 },
+  { name: 'Frontend', score: 45 }, { name: 'DevOps', score: 70 }, { name: 'Database', score: 80 },
+];
 
+function Stat({ num, label }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div className="gradient-text" style={{ fontFamily:'var(--font-head)',fontSize:'2.5rem',fontWeight:700 }}>{num}</div>
+      <div style={{ color:'var(--text-secondary)',fontSize:'0.85rem',marginTop:'0.25rem' }}>{label}</div>
+    </div>
+  );
+}
+
+function Problem({ num, text }) {
+  return (
+    <div className="glass animate-fade-in-up" style={{ padding:'2rem',borderRadius:16 }}>
+      <div className="gradient-text" style={{ fontFamily:'var(--font-head)',fontSize:'3rem',fontWeight:700,lineHeight:1,marginBottom:'1rem' }}>{num}</div>
+      <p style={{ fontFamily:'var(--font-head)',fontSize:'1.2rem',fontWeight:600,color:'var(--text-primary)',lineHeight:1.4 }}>{text}</p>
+    </div>
+  );
+}
+
+export default function LandingPage() {
   return (
     <div>
-      {/* Hero Section */}
-      <section style={{ padding: '8rem 0 10rem', position: 'relative', overflow: 'hidden' }}>
-        <div className="container" style={{ textAlign: 'center', maxWidth: '1000px' }}>
-          <h1 className="title-hero animate-fade-in-up">
-            Every engineer has a shape. <br />
-            <span style={{ color: 'var(--color-accent)', fontStyle: 'italic' }}>Verqify reveals it.</span>
+      {/* Hero */}
+      <section style={{ padding:'8rem 0 6rem',position:'relative',overflow:'hidden' }}>
+        <div style={{ position:'absolute',top:'10%',left:'50%',transform:'translate(-50%,-50%)',width:600,height:600,background:'radial-gradient(closest-side,rgba(99,102,241,0.06),transparent)',pointerEvents:'none',borderRadius:'50%' }} />
+        <div className="container" style={{ textAlign:'center',position:'relative',zIndex:1 }}>
+          <div className="animate-fade-in-up" style={{ marginBottom:'1.5rem' }}>
+            <span className="badge badge-indigo" style={{ fontSize:'0.8rem' }}>
+              <span className="glow-dot" style={{ width:6,height:6 }}></span> Now in private beta
+            </span>
+          </div>
+          <h1 className="headline-xl animate-fade-in-up delay-100" style={{ maxWidth:800,margin:'0 auto 1.5rem' }}>
+            Every engineer has a shape.{' '}<span className="gradient-text">Verqify reveals it.</span>
           </h1>
-          <p className="text-lead animate-fade-in-up delay-100" style={{ maxWidth: '600px', margin: '0 auto 3rem' }}>
+          <p className="animate-fade-in-up delay-200" style={{ fontSize:'1.2rem',color:'var(--text-secondary)',maxWidth:560,margin:'0 auto 3rem',lineHeight:1.7 }}>
             Your work, verified. Your skills, proven. Companies find you based entirely on what you've actually built.
           </p>
-          <div className="animate-fade-in-up delay-200" style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button className="btn btn-primary" style={{ padding: '1.25rem 2.5rem', fontSize: '1.125rem' }}>
-              Claim your fingerprint
-            </button>
-            <button className="btn btn-outline" style={{ padding: '1.25rem 2.5rem', fontSize: '1.125rem' }}>
-              Hire Students
-            </button>
+          <div className="animate-fade-in-up delay-300" style={{ display:'flex',gap:'1rem',justifyContent:'center' }}>
+            <Link to="/signup" className="btn btn-primary" style={{ padding:'1rem 2rem',fontSize:'1rem' }}>Claim your fingerprint →</Link>
+            <Link to="/how-it-works" className="btn btn-secondary" style={{ padding:'1rem 2rem',fontSize:'1rem' }}>How it works</Link>
+          </div>
+          <div className="animate-fade-in-up delay-400" style={{ display:'flex',gap:'4rem',justifyContent:'center',marginTop:'5rem',paddingTop:'4rem',borderTop:'1px solid var(--border)' }}>
+            <Stat num="12k+" label="Engineers verified" />
+            <Stat num="340+" label="Companies hiring" />
+            <Stat num="98%" label="Match accuracy" />
           </div>
         </div>
       </section>
 
-      {/* The Problem Section */}
-      <section style={{ padding: '8rem 0', backgroundColor: 'var(--color-bg-alt)' }}>
+      {/* Fingerprint preview */}
+      <section style={{ padding:'6rem 0' }}>
         <div className="container">
-          <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+          <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'5rem',alignItems:'center' }}>
             <div className="animate-fade-in-up">
-              <span style={{ fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-accent)', display: 'block', marginBottom: '1rem' }}>The Resume is Dead</span>
-              <h2 className="title-section">Your CGPA doesn't show what you built.</h2>
-            </div>
-            <div className="animate-fade-in-up delay-100">
-              <span style={{ fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-accent)', display: 'block', marginBottom: '1rem' }}>Proxy Metrics Fail</span>
-              <h2 className="title-section">Your college name shouldn't decide your future.</h2>
-            </div>
-            <div className="animate-fade-in-up delay-200">
-              <span style={{ fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-accent)', display: 'block', marginBottom: '1rem' }}>Identical Outcomes</span>
-              <h2 className="title-section">Your resume looks identical to 10,000 others.</h2>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The Skill Fingerprint Preview Section */}
-      <section style={{ padding: '10rem 0' }}>
-        <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center' }}>
-            <div className="animate-fade-in-up delay-100">
-              <h2 className="title-section">The verifiable ledger for your engineering identity.</h2>
-              <p className="text-lead mb-8">
-                Built from your actual commits, deployed projects, and real proof. Not what you claim — what you did.
+              <div className="accent-line" />
+              <h2 className="headline-lg" style={{ marginBottom:'1.25rem' }}>Your verifiable engineering identity</h2>
+              <p style={{ color:'var(--text-secondary)',fontSize:'1.05rem',lineHeight:1.75,marginBottom:'2.5rem' }}>
+                Built from your actual commits, deployed projects, and real proof — not what you claim, what you did.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
-                <SkillTag name="Node.js" status="verified" count={8} />
-                <SkillTag name="PostgreSQL" status="verified" count={4} />
-                <SkillTag name="System Design" status="demonstrated" count={1} />
+              <div style={{ display:'flex',flexWrap:'wrap',gap:'0.6rem' }}>
+                <SkillTag name="Node.js" status="verified" />
+                <SkillTag name="PostgreSQL" status="verified" />
+                <SkillTag name="Express" status="verified" />
+                <SkillTag name="System Design" status="demonstrated" />
                 <SkillTag name="React" status="claimed" />
               </div>
             </div>
-            <div className="animate-fade-in-up" style={{ backgroundColor: 'var(--color-bg-alt)', padding: '4rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <SkillFingerprint skills={sampleSkills} size={400} />
+            <div className="glass animate-fade-in-up delay-200" style={{ padding:'3rem',display:'flex',justifyContent:'center',borderRadius:24 }}>
+              <SkillFingerprint skills={sampleSkills} size={380} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section style={{ padding: '10rem 0', borderTop: '1px solid var(--color-border)' }}>
+      {/* Problem bento */}
+      <section style={{ padding:'8rem 0',background:'var(--bg-elevated)',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)' }}>
         <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '6rem' }}>
-            <h2 className="title-section" style={{ margin: 0 }}>How it works.</h2>
-            <button className="btn btn-outline">Read the methodology</button>
+          <div style={{ textAlign:'center',marginBottom:'4rem' }}>
+            <div className="accent-line" style={{ margin:'0 auto 1.5rem' }} />
+            <h2 className="headline-lg animate-fade-in-up">The resume is broken.</h2>
+            <p style={{ color:'var(--text-secondary)',marginTop:'1rem',fontSize:'1.05rem',maxWidth:520,margin:'1rem auto 0' }}>Three problems destroying your chances.</p>
           </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-            <div className="card animate-fade-in-up delay-100">
-              <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-serif)', color: 'var(--color-accent)', marginBottom: '1.5rem' }}>01</div>
-              <h3 style={{ fontSize: '1.75rem', marginBottom: '1rem', fontFamily: 'var(--font-serif)', fontWeight: '400' }}>Connect your work</h3>
-              <p className="text-secondary" style={{ fontSize: '1.05rem' }}>Link your GitHub, deployed projects, internships, and hackathon wins securely.</p>
-            </div>
-            <div className="card animate-fade-in-up delay-200">
-              <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-serif)', color: 'var(--color-accent)', marginBottom: '1.5rem' }}>02</div>
-              <h3 style={{ fontSize: '1.75rem', marginBottom: '1rem', fontFamily: 'var(--font-serif)', fontWeight: '400' }}>Algorithm builds your shape</h3>
-              <p className="text-secondary" style={{ fontSize: '1.05rem' }}>Verqify generates a verified visual identity based entirely on your code, structure, and commits.</p>
-            </div>
-            <div className="card animate-fade-in-up delay-300">
-              <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-serif)', color: 'var(--color-accent)', marginBottom: '1.5rem' }}>03</div>
-              <h3 style={{ fontSize: '1.75rem', marginBottom: '1rem', fontFamily: 'var(--font-serif)', fontWeight: '400' }}>Companies discover you</h3>
-              <p className="text-secondary" style={{ fontSize: '1.05rem' }}>No applying. No resume black hole. Teams filter by real skills and direct message you.</p>
-            </div>
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'1.25rem' }}>
+            <Problem num="01" text="Your CGPA doesn't show what you built at 2am." />
+            <Problem num="02" text="Your college name shouldn't decide your future." />
+            <Problem num="03" text="Your resume looks identical to 10,000 others." />
           </div>
         </div>
       </section>
 
-      {/* Early Access CTA */}
-      <section style={{ padding: '8rem 0', backgroundColor: 'var(--color-text-primary)' }}>
-        <div className="container" style={{ textAlign: 'center' }}>
-          <h2 className="title-hero" style={{ color: 'var(--color-bg)', marginBottom: '1.5rem' }}>Prove what you can build.</h2>
-          <p className="text-lead delay-100" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem' }}>
-            Be among the first engineers with a verified identity. Free for students, forever.
-          </p>
-          <div className="delay-200" style={{ display: 'flex', justifyContent: 'center', gap: '0', maxWidth: '500px', margin: '0 auto' }}>
-            <input 
-              type="email" 
-              placeholder="name@college.edu" 
-              style={{
-                flex: 1,
-                padding: '1.25rem 1.5rem',
-                fontSize: '1.125rem',
-                border: 'none',
-                borderRadius: '0',
-                outline: 'none',
-                fontFamily: 'var(--font-sans)',
-                backgroundColor: 'var(--color-bg)'
-              }}
-            />
-            <button className="btn btn-accent" style={{ padding: '1.25rem 2.5rem', fontSize: '1.125rem', border: 'none' }}>Join waitlist</button>
+      {/* How it works */}
+      <section style={{ padding:'8rem 0' }}>
+        <div className="container">
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:'4rem',flexWrap:'wrap',gap:'1rem' }}>
+            <div><div className="accent-line" /><h2 className="headline-lg animate-fade-in-up">How Verqify works</h2></div>
+            <Link to="/how-it-works" className="btn btn-secondary">Read the methodology</Link>
+          </div>
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'1.25rem' }}>
+            {[
+              { n:'01', title:'Connect your real work', body:'Link GitHub, deployed projects, internship receipts, and hackathon wins — all cryptographically verified.' },
+              { n:'02', title:'Algorithm builds your shape', body:'Verqify analyzes your code density, commit patterns, and deployed surfaces — not keywords on a doc.' },
+              { n:'03', title:'Companies discover you', body:'Recruiters search by verified domain strengths and message you directly. No applications.' },
+            ].map(s => (
+              <div key={s.n} className="glass animate-fade-in-up" style={{ padding:'2.5rem' }}>
+                <div className="gradient-text" style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'1.25rem' }}>{s.n}</div>
+                <h3 style={{ fontFamily:'var(--font-head)',fontSize:'1.2rem',fontWeight:600,marginBottom:'0.75rem' }}>{s.title}</h3>
+                <p style={{ color:'var(--text-secondary)',fontSize:'0.95rem',lineHeight:1.7 }}>{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ padding:'8rem 0',position:'relative',overflow:'hidden' }}>
+        <div style={{ position:'absolute',inset:0,background:'radial-gradient(ellipse 80% 60% at 50% 50%,rgba(99,102,241,0.05),transparent)',pointerEvents:'none' }} />
+        <div className="container" style={{ textAlign:'center',position:'relative',zIndex:1 }}>
+          <h2 className="headline-lg animate-fade-in-up" style={{ marginBottom:'1.25rem' }}>Prove what you can build.</h2>
+          <p style={{ color:'var(--text-secondary)',fontSize:'1.1rem',maxWidth:500,margin:'0 auto 2.5rem' }}>Free for students, forever.</p>
+          <div style={{ display:'flex',maxWidth:480,margin:'0 auto',gap:0 }}>
+            <input className="input" placeholder="name@college.edu" style={{ borderRadius:'var(--radius-md) 0 0 var(--radius-md)',borderRight:'none' }} />
+            <button className="btn btn-primary" style={{ borderRadius:'0 var(--radius-md) var(--radius-md) 0',whiteSpace:'nowrap' }}>Join Waitlist</button>
           </div>
         </div>
       </section>

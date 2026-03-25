@@ -9,6 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     // Initial fetch
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -32,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     session,
     user,
     loading,
-    signOut: () => supabase.auth.signOut()
+    signOut: () => supabase?.auth.signOut()
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
