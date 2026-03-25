@@ -26,9 +26,9 @@ export default function SignUp() {
         <div className="divider" style={{ flex:1,margin:0 }} />
       </div>
       <form style={{ display:'flex',flexDirection:'column',gap:'1rem' }} onSubmit={e=>e.preventDefault()}>
-        <input className="input" type="email" placeholder="name@college.edu" />
+        <input className="input" type="text" placeholder="Your Student ID" />
         <input className="input" type="password" placeholder="Create password" />
-        <button type="submit" className="btn btn-secondary" style={{ width:'100%' }}>Continue with Email</button>
+        <button type="submit" className="btn btn-secondary" style={{ width:'100%' }}>Continue with Student ID</button>
       </form>
       <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
         Already have an account? <Link to="/login" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Log In</Link>
