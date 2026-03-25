@@ -14,6 +14,27 @@ const GithubIcon = () => (
 export default function LogIn() {
   const [step, setStep] = React.useState(1); // 1: ID, 2: OTP
   const [collegeId, setCollegeId] = React.useState('');
+  const [foundStudent, setFoundStudent] = React.useState(null);
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    if(step === 1) {
+      const student = lookupStudent(collegeId);
+      if(student) {
+        setFoundStudent(student);
+        toast.success(`Welcome back, ${student.full_name}!`);
+      }
+      toast.success(`OTP sent to ${collegeId}@university.edu`);
+      setStep(2);
+    } else {
+      toast.promise(new Promise(res=>setTimeout(res, 1000)), {
+        loading: 'Verifying...',
+        success: 'Login successful!',
+        error: 'Failed to verify',
+        finally: () => window.location.href='/dashboard'
+      });
+    }
+  };
 
   const handleGithub = async () => {
     if (!supabase) { console.warn('Supabase not configured — running in demo mode.'); window.location.href = '/dashboard'; return; }
@@ -21,22 +42,13 @@ export default function LogIn() {
   };
   return (
     <div>
-      <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Welcome Back.</h1>
-      <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Log in to your Verqify profile.</p>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={e=>{
-        e.preventDefault(); 
-        if(step===1) {
-          toast.success(`OTP sent to ${collegeId}@university.edu`);
-          setStep(2); 
-        } else {
-          toast.promise(new Promise(res=>setTimeout(res, 1000)), {
-            loading: 'Verifying...',
-            success: 'Login successful!',
-            error: 'Failed to verify',
-            finally: () => window.location.href='/dashboard'
-          });
-        }
-      }}>
+      <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>
+        {foundStudent ? `Welcome back, ${foundStudent.full_name.split(' ')[0]}.` : 'Welcome Back.'}
+      </h1>
+      <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>
+        {foundStudent ? `Recognized from ${foundStudent.college}` : 'Log in to your Verqify profile.'}
+      </p>
+      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={handleNext}>
         {step === 1 ? (
           <>
             <input className="input" type="text" placeholder="College ID" value={collegeId} onChange={e=>setCollegeId(e.target.value)} required />
