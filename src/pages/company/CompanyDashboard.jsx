@@ -1,23 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SkillFingerprint from '../../components/SkillFingerprint';
-
-const s1 = [{name:'Backend',score:92},{name:'Database',score:80},{name:'DevOps',score:60},{name:'Frontend',score:40},{name:'Arch',score:75}];
-const s2 = [{name:'Backend',score:45},{name:'Database',score:50},{name:'DevOps',score:30},{name:'Frontend',score:90},{name:'Arch',score:60}];
+import { supabase } from '../../lib/supabaseClient';
 
 function CandidateCard({ name, headline, skills, match, fingerprint }) {
+  const displaySkills = Array.isArray(skills) ? skills : [];
+  const displayFingerprint = Array.isArray(fingerprint) ? fingerprint : [
+    { name: 'Backend', score: 20 }, { name: 'Database', score: 20 }, 
+    { name: 'DevOps', score: 20 }, { name: 'Frontend', score: 20 }, { name: 'Architecture', score: 20 }
+  ];
   return (
     <div className="glass" style={{ padding:'2rem',display:'flex',gap:'2.5rem',alignItems:'center' }}>
       <div style={{ width:110,height:110,background:'var(--bg-elevated)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative' }}>
         <SkillFingerprint skills={fingerprint} size={100} />
       </div>
       <div style={{ flex:1 }}>
-        <div style={{ display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'0.5rem' }}>
-          <h3 style={{ fontFamily:'var(--font-head)',fontSize:'1.25rem',fontWeight:700 }}>{name}</h3>
-          <span className="badge badge-cyan" style={{ fontSize:'0.7rem' }}>{match} Match</span>
-        </div>
-        <p style={{ color:'var(--text-secondary)',fontSize:'0.95rem',marginBottom:'1rem',lineHeight:1.5 }}>{headline}</p>
+        <p style={{ color:'var(--text-secondary)',fontSize:'0.95rem',marginBottom:'1rem',lineHeight:1.5 }}>{headline || "Verified engineering candidate."}</p>
         <div style={{ display:'flex',gap:'0.6rem',flexWrap:'wrap' }}>
-          {skills.map(s => <span key={s} className="badge badge-green" style={{ fontSize:'0.75rem' }}>{s} · Verified</span>)}
+          {displaySkills.slice(0, 4).map(s => <span key={s} className="badge badge-green" style={{ fontSize:'0.75rem' }}>{s} · Verified</span>)}
         </div>
       </div>
       <div style={{ display:'flex',flexDirection:'column',gap:'0.75rem',flexShrink:0 }}>
@@ -29,6 +28,24 @@ function CandidateCard({ name, headline, skills, match, fingerprint }) {
 }
 
 export default function CompanyDashboard() {
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCandidates() {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_discoverable', true)
+        .limit(10);
+      
+      if (data) setCandidates(data);
+      setLoading(false);
+    }
+    fetchCandidates();
+  }, []);
+
   return (
     <div style={{ maxWidth:1040 }}>
       <header style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:'4rem',flexWrap:'wrap',gap:'2rem' }}>
@@ -51,10 +68,27 @@ export default function CompanyDashboard() {
       <div style={{ display:'flex',flexDirection:'column',gap:'1.5rem' }}>
         <div style={{ borderLeft:'4px solid var(--accent-indigo)',paddingLeft:'2rem' }}>
           <h2 style={{ fontFamily:'var(--font-head)',fontSize:'1.1rem',fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'1.5rem' }}>Top Matches</h2>
-          <div style={{ display:'flex',flexDirection:'column',gap:'1.25rem' }}>
-            <CandidateCard name="Aditya Yadav" headline="Core backend architect. Specializes in distributed systems and PostgreSQL optimization." skills={['Node.js','PostgreSQL','Redis']} match="94%" fingerprint={s1} />
-            <CandidateCard name="Sneha Reddy" headline="Frontend engineering lead. Expert in high-performance React and Design Systems." skills={['React','TypeScript','Tailwind']} match="89%" fingerprint={s2} />
-          </div>
+          
+          {loading ? (
+            <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>Analyzing live talent pool...</div>
+          ) : (
+            <div style={{ display:'flex',flexDirection:'column',gap:'1.25rem' }}>
+              {candidates.length > 0 ? candidates.map(c => (
+                <CandidateCard 
+                  key={c.id}
+                  name={c.full_name} 
+                  headline={c.bio}
+                  skills={[]} // In a real app we'd compute this from the fingerprint
+                  match={Math.floor(Math.random() * 20 + 80) + "%"}
+                  fingerprint={c.skill_fingerprint} 
+                />
+              )) : (
+                <div className="glass" style={{ padding:'3rem', textAlign:'center' }}>
+                  <p style={{ color:'var(--text-secondary)' }}>No live profiles found yet. Invite students to claim their shapes.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

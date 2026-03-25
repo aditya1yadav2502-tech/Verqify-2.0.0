@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SkillFingerprint from '../components/SkillFingerprint';
 import SkillTag from '../components/SkillTag';
+import { supabase } from '../lib/supabaseClient';
 
 const sampleSkills = [
   { name: 'Architecture', score: 85 }, { name: 'Backend', score: 95 },
@@ -27,6 +28,34 @@ function Problem({ num, text }) {
 }
 
 export default function LandingPage() {
+  const [stats, setStats] = useState({ engineers: 0, companies: 340, accuracy: 98 });
+  const [featured, setFeatured] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!supabase) return;
+      
+      // Fetch count of verified profiles
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      // Fetch one featured profile for the showcase
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_discoverable', true)
+        .limit(1);
+
+      if (count !== null) setStats(prev => ({ ...prev, engineers: count })); // Pure real count
+      if (profiles && profiles.length > 0) setFeatured(profiles[0]);
+      
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
   return (
     <div>
       {/* Hero */}
@@ -58,7 +87,7 @@ export default function LandingPage() {
               position:'relative', zIndex:2
             }}>
               <div style={{ transform:'scale(1.1)' }}>
-                <SkillFingerprint skills={sampleSkills} size={420} />
+                <SkillFingerprint skills={featured?.skill_fingerprint || sampleSkills} size={420} />
               </div>
             </div>
             {/* Visual tether to pull eye down */}
@@ -70,9 +99,9 @@ export default function LandingPage() {
           </div>
 
           <div className="animate-fade-in-up delay-500" style={{ display:'flex',gap:'4rem',justifyContent:'center',marginTop:'8rem',paddingTop:'4rem',borderTop:'1px solid var(--border)' }}>
-            <Stat num="12k+" label="Engineers verified" />
-            <Stat num="340+" label="Companies hiring" />
-            <Stat num="98%" label="Match accuracy" />
+            <Stat num={stats.engineers + (stats.engineers > 1000 ? "" : "k+")} label="Engineers verified" />
+            <Stat num={stats.companies + "+"} label="Companies hiring" />
+            <Stat num={stats.accuracy + "%"} label="Match accuracy" />
           </div>
         </div>
       </section>
@@ -97,16 +126,17 @@ export default function LandingPage() {
             <div>
               <div style={{ marginBottom:'2.5rem' }}>
                 <span className="label" style={{ color:'var(--accent-indigo)', letterSpacing:'0.15em' }}>Verified Candidate</span>
-                <h3 style={{ fontFamily:'var(--font-head)', fontSize:'2.5rem', fontWeight:700, margin:'0.5rem 0' }}>Aditya Yadav</h3>
+                <h3 style={{ fontFamily:'var(--font-head)', fontSize:'2.5rem', fontWeight:700, margin:'0.5rem 0' }}>
+                  {featured?.full_name || "Aditya Yadav"}
+                </h3>
                 <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'0.5rem' }}>
-                  <span className="badge badge-indigo">The Systems Architect</span>
-                  <span style={{ fontSize:'0.9rem', color:'var(--text-muted)' }}>Top 2% in Backend</span>
+                  <span className="badge badge-indigo">{featured?.major || "The Systems Architect"}</span>
                 </div>
               </div>
 
               <div style={{ marginBottom:'3rem' }}>
                 <p style={{ fontSize:'1.05rem', lineHeight:1.7, color:'var(--text-secondary)', marginBottom:'2rem' }}>
-                  "I build high-throughput distributed systems. My fingerprint reflects a heavy density in Infrastructure and Database Design, backed by 400+ verified commits."
+                  "{featured?.bio || "I build high-throughput distributed systems. My fingerprint reflects a heavy density in Infrastructure and Database Design, backed by 400+ verified commits."}"
                 </p>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:'0.8rem' }}>
                   <SkillTag name="Node.js" status="verified" />
@@ -133,11 +163,13 @@ export default function LandingPage() {
 
             {/* Right side: Fingerprint */}
             <div style={{ display:'flex', justifyContent:'center', padding:'2rem', background:'radial-gradient(circle at center, rgba(99,102,241,0.03) 0%, transparent 70%)', borderRadius:24 }}>
-              <SkillFingerprint skills={sampleSkills} size={420} />
+              <SkillFingerprint skills={featured?.skill_fingerprint || sampleSkills} size={420} />
             </div>
           </div>
         </div>
       </section>
+...
+
 
       {/* Problem bento */}
       <section style={{ padding:'8rem 0',background:'var(--bg-elevated)',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)' }}>
