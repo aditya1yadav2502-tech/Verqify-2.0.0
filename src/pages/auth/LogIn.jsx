@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { supabase } from '../../lib/supabaseClient';
 
 const GithubIcon = () => (
@@ -21,7 +22,20 @@ export default function LogIn() {
     <div>
       <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Welcome Back.</h1>
       <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Log in to your Verqify profile.</p>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={e=>{e.preventDefault(); if(step===1) setStep(2); else window.location.href='/dashboard';}}>
+      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={e=>{
+        e.preventDefault(); 
+        if(step===1) {
+          toast.success(`OTP sent to ${collegeId}@university.edu`);
+          setStep(2); 
+        } else {
+          toast.promise(new Promise(res=>setTimeout(res, 1000)), {
+            loading: 'Verifying...',
+            success: 'Login successful!',
+            error: 'Failed to verify',
+            finally: () => window.location.href='/dashboard'
+          });
+        }
+      }}>
         {step === 1 ? (
           <>
             <input className="input" type="text" placeholder="College ID" value={collegeId} onChange={e=>setCollegeId(e.target.value)} required />

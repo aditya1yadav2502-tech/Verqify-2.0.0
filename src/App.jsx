@@ -1,5 +1,5 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 /* Layouts */
 import PublicLayout from './layouts/PublicLayout';
@@ -36,44 +36,47 @@ import Messages from './pages/company/Messages';
 
 function App() {
   return (
-    <Routes>
-      {/* Public Routes with Navbar & Footer */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/s/:username" element={<StudentProfile />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/companies" element={<ForCompanies />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/contact" element={<Contact />} />
-      </Route>
+    <>
+      <Toaster position="top-center" richColors />
+      <Routes>
+        {/* Public Routes with Navbar & Footer */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/s/:username" element={<StudentProfile />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/companies" element={<ForCompanies />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/contact" element={<Contact />} />
+        </Route>
 
-      {/* Auth Routes with Minimal Layout */}
-      <Route element={<AuthLayout />}>
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/login" element={<LogIn />} />
-        <Route path="/company/login" element={<CompanyLogin />} />
-      </Route>
+        {/* Auth Routes with Minimal Layout */}
+        <Route element={<AuthLayout />}>
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/login" element={<LogIn />} />
+          <Route path="/company/login" element={<CompanyLogin />} />
+        </Route>
 
-      {/* Student Dashboard Routes */}
-      <Route element={<StudentLayout />}>
-        <Route path="/dashboard" element={<StudentDashboard />} />
-        <Route path="/dashboard/profile" element={<BuildProfile />} />
-        <Route path="/dashboard/fingerprint" element={<MyFingerprint />} />
-        <Route path="/dashboard/proof" element={<ProofVerification />} />
-        <Route path="/dashboard/settings" element={<VisibilitySettings />} />
-        <Route path="/dashboard/analytics" element={<Analytics />} />
-      </Route>
+        {/* Student Dashboard Routes */}
+        <Route element={<StudentLayout />}>
+          <Route path="/dashboard" element={<StudentDashboard />} />
+          <Route path="/dashboard/profile" element={<BuildProfile />} />
+          <Route path="/dashboard/fingerprint" element={<MyFingerprint />} />
+          <Route path="/dashboard/proof" element={<ProofVerification />} />
+          <Route path="/dashboard/settings" element={<VisibilitySettings />} />
+          <Route path="/dashboard/analytics" element={<Analytics />} />
+        </Route>
 
-      {/* Company Dashboard Routes */}
-      <Route element={<CompanyLayout />}>
-        <Route path="/company/dashboard" element={<CompanyDashboard />} />
-        <Route path="/company/saved" element={<SavedCandidates />} />
-        <Route path="/company/messages" element={<Messages />} />
-      </Route>
-    </Routes>
+        {/* Company Dashboard Routes */}
+        <Route element={<CompanyLayout />}>
+          <Route path="/company/dashboard" element={<CompanyDashboard />} />
+          <Route path="/company/saved" element={<SavedCandidates />} />
+          <Route path="/company/messages" element={<Messages />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 
