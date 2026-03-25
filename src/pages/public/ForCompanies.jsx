@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 export default function ForCompanies() {
   return (
     <div className="container" style={{ padding: '6rem 0' }}>
-      <h1 style={{ fontSize: '3.5rem', marginBottom: '1.5rem', maxWidth: '800px' }}>Hire builders, not resumes.</h1>
+      <h1 style={{ fontSize: '3.5rem', marginBottom: '1.5rem', maxWidth: '800px' }}>Hire builders, not by paper.</h1>
       <p className="text-secondary" style={{ fontSize: '1.25rem', maxWidth: '600px', marginBottom: '3rem' }}>
         Stop filtering by college tier and GPA. Discover verified engineering talent based entirely on what they have built and deployed.
       </p>

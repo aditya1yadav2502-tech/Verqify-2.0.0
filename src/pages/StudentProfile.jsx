@@ -96,7 +96,7 @@ export default function StudentProfile() {
       <section className="animate-fade-in-up delay-500" style={{ padding: '6rem 0', textAlign: 'center', marginTop: '6rem', position: 'relative' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '2px', height: '4rem', backgroundColor: 'var(--color-accent)' }}></div>
         <h3 className="title-section" style={{ marginBottom: '1.5rem' }}>Want a profile like this?</h3>
-        <p className="text-lead mb-8">Stop tweaking your resume. Let your code speak.</p>
+        <p className="text-lead mb-8">Stop tweaking your bio. Let your code speak.</p>
         <button className="btn btn-primary" style={{ padding: '1.25rem 2.5rem', fontSize: '1.125rem' }}>Build your Skill Fingerprint</button>
       </section>
 

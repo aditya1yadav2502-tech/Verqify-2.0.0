@@ -10,7 +10,7 @@ export default function About() {
         </p>
         <p>
           Right now, millions of students are judged by proxy metrics that have nothing to do with building software. 
-          A resume is a piece of paper that anyone can fabricate. A CGPA measures your ability to pass exams, not your ability to architect a robust backend. 
+          A standard CV is a piece of paper that anyone can fabricate. A CGPA measures your ability to pass exams, not your ability to architect a robust backend. 
           A college tier measures what you did when you were 17, not what you can code at 21. 
         </p>
         <p>

@@ -107,13 +107,13 @@ export default function LandingPage() {
         <div className="container">
           <div style={{ textAlign:'center',marginBottom:'4rem' }}>
             <div className="accent-line" style={{ margin:'0 auto 1.5rem' }} />
-            <h2 className="headline-lg animate-fade-in-up">The resume is broken.</h2>
+            <h2 className="headline-lg animate-fade-in-up">Legacy screening is broken.</h2>
             <p style={{ color:'var(--text-secondary)',marginTop:'1rem',fontSize:'1.05rem',maxWidth:520,margin:'1rem auto 0' }}>Three problems destroying your chances.</p>
           </div>
           <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'1.25rem' }}>
             <Problem num="01" text="Your CGPA doesn't show what you built at 2am." />
             <Problem num="02" text="Your college name shouldn't decide your future." />
-            <Problem num="03" text="Your resume looks identical to 10,000 others." />
+            <Problem num="03" text="Your standard profile looks identical to 10,000 others." />
           </div>
         </div>
       </section>
