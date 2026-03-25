@@ -14,6 +14,7 @@ const GithubIcon = () => (
 export default function SignUp() {
   const [step, setStep] = React.useState(1); // 1: ID, 2: OTP
   const [collegeId, setCollegeId] = React.useState('');
+  const [otp, setOtp] = React.useState('');
   const [foundStudent, setFoundStudent] = React.useState(null);
 
   const handleNext = async (e) => {
@@ -45,12 +46,18 @@ export default function SignUp() {
         setStep(2);
       }
     } else {
-      toast.promise(new Promise(res => setTimeout(res, 1000)), {
-        loading: 'Creating verified profile...',
-        success: 'Welcome to the network!',
-        error: 'Failed to create account',
-        finally: () => window.location.href = '/dashboard'
+      const { error } = await supabase.auth.verifyOtp({
+        email: `${collegeId}@university.edu`,
+        token: otp,
+        type: 'signup'
       });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Welcome to the network!');
+        window.location.href = '/dashboard';
+      }
     }
   };
 
@@ -77,7 +84,7 @@ export default function SignUp() {
             <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>OTP sent to registered mobile/email for <b>{collegeId}</b></span>
             </div>
-            <input className="input" type="text" placeholder="Enter 6-digit OTP" maxLength={6} required />
+            <input className="input" type="text" placeholder="Enter 6-digit OTP" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} required />
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Join</button>
             <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>Change ID</button>
           </>

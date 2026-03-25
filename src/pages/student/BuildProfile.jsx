@@ -1,11 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function BuildProfile() {
-  const handleSave = (e) => {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState({
+    full_name: '',
+    college: '',
+    github_url: '',
+    live_url: ''
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user || !supabase) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setProfile({
+          full_name: data.full_name || '',
+          college: data.college || '',
+          github_url: data.github_url || '',
+          live_url: data.live_url || ''
+        });
+      }
+      setLoading(false);
+    }
+    loadProfile();
+  }, [user]);
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    toast.success('Identity profile updated successfully');
+    if (!supabase) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        ...profile,
+        updated_at: new Error().toISOString() // shorthand for now()
+      });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Professional identity updated');
+    }
   };
+
+  if (loading && user) return <div className="container" style={{ paddingTop:'8rem' }}>Loading identity...</div>;
 
   return (
     <div style={{ maxWidth: 960 }}>

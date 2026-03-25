@@ -14,6 +14,7 @@ const GithubIcon = () => (
 export default function LogIn() {
   const [step, setStep] = React.useState(1); // 1: ID, 2: OTP
   const [collegeId, setCollegeId] = React.useState('');
+  const [otp, setOtp] = React.useState('');
   const [foundStudent, setFoundStudent] = React.useState(null);
 
   const handleNext = async (e) => {
@@ -41,14 +42,18 @@ export default function LogIn() {
         setStep(2);
       }
     } else {
-      // Real OTP Verification would happen here with a state for the OTP input
-      // For now, we simulate the 'success' transition while explaining the real call
-      toast.promise(new Promise(res => setTimeout(res, 1000)), {
-        loading: 'Verifying...',
-        success: 'Welcome back!',
-        error: 'Invalid code',
-        finally: () => window.location.href = '/dashboard'
+      const { error } = await supabase.auth.verifyOtp({
+        email: `${collegeId}@university.edu`,
+        token: otp,
+        type: 'magiclink' // Or 'signup' depending on how it was sent
       });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Welcome back!');
+        window.location.href = '/dashboard';
+      }
     }
   };
 
@@ -75,7 +80,7 @@ export default function LogIn() {
             <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Enter the code sent for <b>{collegeId}</b></span>
             </div>
-            <input className="input" type="text" placeholder="6-digit OTP" maxLength={6} required />
+            <input className="input" type="text" placeholder="6-digit OTP" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} required />
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Login</button>
             <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>Change ID</button>
           </>
