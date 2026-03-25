@@ -45,10 +45,31 @@ export default function LandingPage() {
             Your work, verified. Your skills, proven. Companies find you based entirely on what you've actually built.
           </p>
           <div className="animate-fade-in-up delay-300" style={{ display:'flex',gap:'1rem',justifyContent:'center' }}>
-            <Link to="/signup" className="btn btn-primary" style={{ padding:'1rem 2rem',fontSize:'1rem' }}>Claim your fingerprint →</Link>
-            <Link to="/how-it-works" className="btn btn-secondary" style={{ padding:'1rem 2rem',fontSize:'1rem' }}>How it works</Link>
+            <Link to="/signup" className="btn btn-primary" style={{ padding:'1rem 2.5rem',fontSize:'1.1rem' }}>Claim your fingerprint →</Link>
+            <Link to="/how-it-works" className="btn btn-secondary" style={{ padding:'1rem 2.5rem',fontSize:'1.1rem' }}>How it works</Link>
           </div>
-          <div className="animate-fade-in-up delay-400" style={{ display:'flex',gap:'4rem',justifyContent:'center',marginTop:'5rem',paddingTop:'4rem',borderTop:'1px solid var(--border)' }}>
+
+          {/* Hero Product Preview */}
+          <div className="animate-fade-in-up delay-400" style={{ marginTop:'5rem',position:'relative' }}>
+            <div className="glass" style={{ 
+              maxWidth:800, margin:'0 auto', padding:'3rem', 
+              display:'flex', alignItems:'center', justifyContent:'center',
+              boxShadow:'0 24px 60px rgba(99,102,241,0.12)',
+              position:'relative', zIndex:2
+            }}>
+              <div style={{ transform:'scale(1.1)' }}>
+                <SkillFingerprint skills={sampleSkills} size={420} />
+              </div>
+            </div>
+            {/* Visual tether to pull eye down */}
+            <div style={{ 
+              position:'absolute', bottom:-100, left:'50%', transform:'translateX(-50%)',
+              width:2, height:120, background:'linear-gradient(to bottom, var(--accent-indigo), transparent)',
+              zIndex:1
+            }} />
+          </div>
+
+          <div className="animate-fade-in-up delay-500" style={{ display:'flex',gap:'4rem',justifyContent:'center',marginTop:'8rem',paddingTop:'4rem',borderTop:'1px solid var(--border)' }}>
             <Stat num="12k+" label="Engineers verified" />
             <Stat num="340+" label="Companies hiring" />
             <Stat num="98%" label="Match accuracy" />
