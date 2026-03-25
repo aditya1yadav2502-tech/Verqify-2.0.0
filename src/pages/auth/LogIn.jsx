@@ -10,6 +10,9 @@ const GithubIcon = () => (
 );
 
 export default function LogIn() {
+  const [step, setStep] = React.useState(1); // 1: ID, 2: OTP
+  const [collegeId, setCollegeId] = React.useState('');
+
   const handleGithub = async () => {
     if (!supabase) { console.warn('Supabase not configured — running in demo mode.'); window.location.href = '/dashboard'; return; }
     await supabase.auth.signInWithOAuth({ provider:'github', options:{ scopes:'repo read:user', redirectTo:`${window.location.origin}/dashboard` } });
@@ -18,10 +21,22 @@ export default function LogIn() {
     <div>
       <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Welcome Back.</h1>
       <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Log in to your Verqify profile.</p>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={e=>e.preventDefault()}>
-        <input className="input" type="text" placeholder="College ID" />
-        <input className="input" type="password" placeholder="Your password" />
-        <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Sign In with College ID</button>
+      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={e=>{e.preventDefault(); if(step===1) setStep(2); else window.location.href='/dashboard';}}>
+        {step === 1 ? (
+          <>
+            <input className="input" type="text" placeholder="College ID" value={collegeId} onChange={e=>setCollegeId(e.target.value)} required />
+            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Get OTP</button>
+          </>
+        ) : (
+          <>
+            <div style={{ textAlign:'center', marginBottom:'0.5rem' }}>
+              <span style={{ fontSize:'0.85rem', color:'var(--text-secondary)' }}>Enter the code sent for <b>{collegeId}</b></span>
+            </div>
+            <input className="input" type="text" placeholder="6-digit OTP" maxLength={6} required />
+            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Verify & Login</button>
+            <button type="button" onClick={()=>setStep(1)} className="btn btn-ghost" style={{ fontSize:'0.8rem' }}>Change ID</button>
+          </>
+        )}
       </form>
 
       <div style={{ display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1.5rem' }}>

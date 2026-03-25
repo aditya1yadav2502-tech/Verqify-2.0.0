@@ -10,6 +10,9 @@ const GithubIcon = () => (
 );
 
 export default function SignUp() {
+  const [step, setStep] = React.useState(1); // 1: ID, 2: OTP
+  const [collegeId, setCollegeId] = React.useState('');
+
   const handleGithub = async () => {
     if (!supabase) { console.warn('Supabase not configured — running in demo mode.'); window.location.href = '/dashboard'; return; }
     await supabase.auth.signInWithOAuth({ provider:'github', options:{ scopes:'repo read:user', redirectTo:`${window.location.origin}/dashboard` } });
@@ -18,11 +21,22 @@ export default function SignUp() {
     <div>
       <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>Join Verqify.</h1>
       <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>Sign up using your official College ID.</p>
-      <div className="badge badge-indigo" style={{ marginBottom:'1.5rem' }}>Official College ID Required</div>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem' }} onSubmit={e=>e.preventDefault()}>
-        <input className="input" type="text" placeholder="Enter College ID" />
-        <input className="input" type="password" placeholder="Create password" />
-        <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Create Account</button>
+      <form style={{ display:'flex',flexDirection:'column',gap:'1rem' }} onSubmit={e=>{e.preventDefault(); if(step===1) setStep(2); else window.location.href='/dashboard';}}>
+        {step === 1 ? (
+          <>
+            <input className="input" type="text" placeholder="Enter College ID" value={collegeId} onChange={e=>setCollegeId(e.target.value)} required />
+            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Send OTP</button>
+          </>
+        ) : (
+          <>
+            <div style={{ textAlign:'center', marginBottom:'0.5rem' }}>
+              <span style={{ fontSize:'0.85rem', color:'var(--text-secondary)' }}>OTP sent to registered mobile/email for <b>{collegeId}</b></span>
+            </div>
+            <input className="input" type="text" placeholder="Enter 6-digit OTP" maxLength={6} required />
+            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Verify & Join</button>
+            <button type="button" onClick={()=>setStep(1)} className="btn btn-ghost" style={{ fontSize:'0.8rem' }}>Change ID</button>
+          </>
+        )}
       </form>
       <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
         Already have an account? <Link to="/login" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Log In</Link>
