@@ -16,57 +16,75 @@ export default function SignUp() {
   const [collegeId, setCollegeId] = React.useState('');
   const [foundStudent, setFoundStudent] = React.useState(null);
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
-    if(step === 1) {
-      const student = lookupStudent(collegeId);
-      if(student) {
-        setFoundStudent(student);
-        toast.success(`Identity verified: ${student.full_name}`);
+    if (step === 1) {
+      if (!supabase) {
+        toast.error("Supabase not connected. check .env");
+        return;
       }
-      toast.success(`Verification OTP sent to ${collegeId}@university.edu`);
-      setStep(2);
+
+      const student = lookupStudent(collegeId);
+      if (student) setFoundStudent(student);
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: `${collegeId}@university.edu`,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            college_id: collegeId,
+            full_name: student?.full_name || 'Anonymous Builder'
+          }
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success(`Verification OTP sent to ${collegeId}@university.edu`);
+        setStep(2);
+      }
     } else {
-      toast.promise(new Promise(res=>setTimeout(res, 1000)), {
+      toast.promise(new Promise(res => setTimeout(res, 1000)), {
         loading: 'Creating verified profile...',
         success: 'Welcome to the network!',
         error: 'Failed to create account',
-        finally: () => window.location.href='/dashboard'
+        finally: () => window.location.href = '/dashboard'
       });
     }
   };
 
   const handleGithub = async () => {
     if (!supabase) { console.warn('Supabase not configured — running in demo mode.'); window.location.href = '/dashboard'; return; }
-    await supabase.auth.signInWithOAuth({ provider:'github', options:{ scopes:'repo read:user', redirectTo:`${window.location.origin}/dashboard` } });
+    await supabase.auth.signInWithOAuth({ provider: 'github', options: { scopes: 'repo read:user', redirectTo: `${window.location.origin}/dashboard` } });
   };
   return (
     <div>
-      <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>
+      <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
         {foundStudent ? `Welcome, ${foundStudent.full_name.split(' ')[0]}.` : 'Join Verqify.'}
       </h1>
-      <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
         {foundStudent ? `Pre-verified from ${foundStudent.college}` : 'Sign up using your official College ID.'}
       </p>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem' }} onSubmit={handleNext}>
+      <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} onSubmit={handleNext}>
         {step === 1 ? (
           <>
-            <input className="input" type="text" placeholder="Enter College ID" value={collegeId} onChange={e=>setCollegeId(e.target.value)} required />
-            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Send OTP</button>
+            <input className="input" type="text" placeholder="Enter College ID" value={collegeId} onChange={e => setCollegeId(e.target.value)} required />
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Send OTP</button>
           </>
         ) : (
           <>
-            <div style={{ textAlign:'center', marginBottom:'0.5rem' }}>
-              <span style={{ fontSize:'0.85rem', color:'var(--text-secondary)' }}>OTP sent to registered mobile/email for <b>{collegeId}</b></span>
+            <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>OTP sent to registered mobile/email for <b>{collegeId}</b></span>
             </div>
             <input className="input" type="text" placeholder="Enter 6-digit OTP" maxLength={6} required />
-            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Verify & Join</button>
-            <button type="button" onClick={()=>setStep(1)} className="btn btn-ghost" style={{ fontSize:'0.8rem' }}>Change ID</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Join</button>
+            <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>Change ID</button>
           </>
         )}
       </form>
-      <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
-        Already have an account? <Link to="/login" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Log In</Link>
+      <p style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        Already have an account? <Link to="/login" style={{ color: 'var(--accent-indigo)', fontWeight: 500 }}>Log In</Link>
       </p>
     </div>
   );

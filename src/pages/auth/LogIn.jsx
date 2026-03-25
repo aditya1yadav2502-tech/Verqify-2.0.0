@@ -16,67 +16,83 @@ export default function LogIn() {
   const [collegeId, setCollegeId] = React.useState('');
   const [foundStudent, setFoundStudent] = React.useState(null);
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
-    if(step === 1) {
-      const student = lookupStudent(collegeId);
-      if(student) {
-        setFoundStudent(student);
-        toast.success(`Welcome back, ${student.full_name}!`);
+    if (step === 1) {
+      if (!supabase) {
+        toast.error("Supabase not connected. check .env");
+        return;
       }
-      toast.success(`OTP sent to ${collegeId}@university.edu`);
-      setStep(2);
+      
+      const student = lookupStudent(collegeId);
+      if (student) setFoundStudent(student);
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: `${collegeId}@university.edu`, // Real implementation would use their registered email
+        options: {
+          shouldCreateUser: false,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success(`OTP sent to ${collegeId}@university.edu`);
+        setStep(2);
+      }
     } else {
-      toast.promise(new Promise(res=>setTimeout(res, 1000)), {
+      // Real OTP Verification would happen here with a state for the OTP input
+      // For now, we simulate the 'success' transition while explaining the real call
+      toast.promise(new Promise(res => setTimeout(res, 1000)), {
         loading: 'Verifying...',
-        success: 'Login successful!',
-        error: 'Failed to verify',
-        finally: () => window.location.href='/dashboard'
+        success: 'Welcome back!',
+        error: 'Invalid code',
+        finally: () => window.location.href = '/dashboard'
       });
     }
   };
 
   const handleGithub = async () => {
     if (!supabase) { console.warn('Supabase not configured — running in demo mode.'); window.location.href = '/dashboard'; return; }
-    await supabase.auth.signInWithOAuth({ provider:'github', options:{ scopes:'repo read:user', redirectTo:`${window.location.origin}/dashboard` } });
+    await supabase.auth.signInWithOAuth({ provider: 'github', options: { scopes: 'repo read:user', redirectTo: `${window.location.origin}/dashboard` } });
   };
   return (
     <div>
-      <h1 style={{ fontFamily:'var(--font-head)',fontSize:'2rem',fontWeight:700,marginBottom:'0.5rem' }}>
+      <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
         {foundStudent ? `Welcome back, ${foundStudent.full_name.split(' ')[0]}.` : 'Welcome Back.'}
       </h1>
-      <p style={{ color:'var(--text-secondary)',marginBottom:'2rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
         {foundStudent ? `Recognized from ${foundStudent.college}` : 'Log in to your Verqify profile.'}
       </p>
-      <form style={{ display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'2rem' }} onSubmit={handleNext}>
+      <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }} onSubmit={handleNext}>
         {step === 1 ? (
           <>
-            <input className="input" type="text" placeholder="College ID" value={collegeId} onChange={e=>setCollegeId(e.target.value)} required />
-            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Get OTP</button>
+            <input className="input" type="text" placeholder="College ID" value={collegeId} onChange={e => setCollegeId(e.target.value)} required />
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Get OTP</button>
           </>
         ) : (
           <>
-            <div style={{ textAlign:'center', marginBottom:'0.5rem' }}>
-              <span style={{ fontSize:'0.85rem', color:'var(--text-secondary)' }}>Enter the code sent for <b>{collegeId}</b></span>
+            <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Enter the code sent for <b>{collegeId}</b></span>
             </div>
             <input className="input" type="text" placeholder="6-digit OTP" maxLength={6} required />
-            <button type="submit" className="btn btn-primary" style={{ width:'100%' }}>Verify & Login</button>
-            <button type="button" onClick={()=>setStep(1)} className="btn btn-ghost" style={{ fontSize:'0.8rem' }}>Change ID</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Login</button>
+            <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>Change ID</button>
           </>
         )}
       </form>
 
-      <div style={{ display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1.5rem' }}>
-        <div className="divider" style={{ flex:1,margin:0 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="divider" style={{ flex: 1, margin: 0 }} />
         <span className="label">or</span>
-        <div className="divider" style={{ flex:1,margin:0 }} />
+        <div className="divider" style={{ flex: 1, margin: 0 }} />
       </div>
 
-      <button onClick={handleGithub} className="btn btn-secondary" style={{ width:'100%',gap:'0.75rem' }}>
+      <button onClick={handleGithub} className="btn btn-secondary" style={{ width: '100%', gap: '0.75rem' }}>
         <GithubIcon /> Log In with GitHub
       </button>
-      <p style={{ textAlign:'center',marginTop:'1.75rem',fontSize:'0.85rem',color:'var(--text-muted)' }}>
-        No account? <Link to="/signup" style={{ color:'var(--accent-indigo)',fontWeight:500 }}>Sign Up</Link>
+      <p style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        No account? <Link to="/signup" style={{ color: 'var(--accent-indigo)', fontWeight: 500 }}>Sign Up</Link>
       </p>
     </div>
   );
