@@ -130,13 +130,13 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 
 /* ─── Badge ─── */
 .badge {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.3rem 0.75rem; border-radius: 999px;
-  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 1rem; border-radius: 999px;
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em;
 }
-.badge-indigo { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); color: var(--accent-indigo); }
-.badge-cyan   { background: rgba(6,182,212,0.08);  border: 1px solid rgba(6,182,212,0.18); color: var(--accent-cyan); }
-.badge-green  { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.18); color: var(--accent-green); }
+.badge-indigo { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: var(--accent-indigo); }
+.badge-cyan   { background: rgba(6,182,212,0.12);  border: 1px solid rgba(6,182,212,0.25); color: var(--accent-cyan); }
+.badge-green  { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); color: var(--accent-green); }
 .badge-neutral{ background: var(--bg-elevated);     border: 1px solid var(--border);          color: var(--text-secondary); }
 
 /* ─── Input ─── */

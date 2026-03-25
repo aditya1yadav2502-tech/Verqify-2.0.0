@@ -78,25 +78,62 @@ export default function LandingPage() {
       </section>
 
       {/* Fingerprint preview */}
-      <section style={{ padding:'6rem 0' }}>
+      <section style={{ padding:'8rem 0', position:'relative' }}>
         <div className="container">
-          <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'5rem',alignItems:'center' }}>
-            <div className="animate-fade-in-up">
-              <div className="accent-line" />
-              <h2 className="headline-lg" style={{ marginBottom:'1.25rem' }}>Your verifiable engineering identity</h2>
-              <p style={{ color:'var(--text-secondary)',fontSize:'1.05rem',lineHeight:1.75,marginBottom:'2.5rem' }}>
-                Built from your actual commits, deployed projects, and real proof — not what you claim, what you did.
-              </p>
-              <div style={{ display:'flex',flexWrap:'wrap',gap:'0.6rem' }}>
-                <SkillTag name="Node.js" status="verified" />
-                <SkillTag name="PostgreSQL" status="verified" />
-                <SkillTag name="Express" status="verified" />
-                <SkillTag name="System Design" status="demonstrated" />
-                <SkillTag name="React" status="claimed" />
+          <div style={{ textAlign:'center', marginBottom:'4rem' }}>
+            <div className="accent-line" style={{ margin:'0 auto 1.5rem' }} />
+            <h2 className="headline-lg animate-fade-in-up">The New Proof-of-Work.</h2>
+            <p style={{ color:'var(--text-secondary)', fontSize:'1.1rem', maxWidth:600, margin:'1rem auto 0' }}>
+              Your engineering identity is no longer a document. It's a verified signal generated from your raw contributions.
+            </p>
+          </div>
+
+          <div className="glass animate-fade-in-up delay-200" style={{ 
+            maxWidth:1000, margin:'0 auto', padding:'4rem', borderRadius:32,
+            display:'grid', gridTemplateColumns:'1fr 1.2fr', gap:'4rem', alignItems:'center',
+            boxShadow:'0 32px 80px rgba(99,102,241,0.08)'
+          }}>
+            {/* Left side: Metadata & Skills */}
+            <div>
+              <div style={{ marginBottom:'2.5rem' }}>
+                <span className="label" style={{ color:'var(--accent-indigo)', letterSpacing:'0.15em' }}>Verified Candidate</span>
+                <h3 style={{ fontFamily:'var(--font-head)', fontSize:'2.5rem', fontWeight:700, margin:'0.5rem 0' }}>Aditya Yadav</h3>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'0.5rem' }}>
+                  <span className="badge badge-indigo">The Systems Architect</span>
+                  <span style={{ fontSize:'0.9rem', color:'var(--text-muted)' }}>Top 2% in Backend</span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom:'3rem' }}>
+                <p style={{ fontSize:'1.05rem', lineHeight:1.7, color:'var(--text-secondary)', marginBottom:'2rem' }}>
+                  "I build high-throughput distributed systems. My fingerprint reflects a heavy density in Infrastructure and Database Design, backed by 400+ verified commits."
+                </p>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'0.8rem' }}>
+                  <SkillTag name="Node.js" status="verified" />
+                  <SkillTag name="PostgreSQL" status="verified" />
+                  <SkillTag name="Kubernetes" status="demonstrated" />
+                  <SkillTag name="Redis" status="verified" />
+                  <SkillTag name="React" status="claimed" />
+                  <SkillTag name="System Design" status="demonstrated" />
+                </div>
+              </div>
+
+              {/* Distinction Legend */}
+              <div style={{ paddingTop:'2rem', borderTop:'1px solid var(--border)', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem' }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:'0.25rem' }}>Verified ✓</div>
+                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Proven by direct Git commit SHA & deployment logs.</div>
+                </div>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:'0.25rem' }}>Demonstrated ✦</div>
+                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Extracted from project context and complexity.</div>
+                </div>
               </div>
             </div>
-            <div className="glass animate-fade-in-up delay-200" style={{ padding:'3rem',display:'flex',justifyContent:'center',borderRadius:24 }}>
-              <SkillFingerprint skills={sampleSkills} size={380} />
+
+            {/* Right side: Fingerprint */}
+            <div style={{ display:'flex', justifyContent:'center', padding:'2rem', background:'radial-gradient(circle at center, rgba(99,102,241,0.03) 0%, transparent 70%)', borderRadius:24 }}>
+              <SkillFingerprint skills={sampleSkills} size={420} />
             </div>
           </div>
         </div>
