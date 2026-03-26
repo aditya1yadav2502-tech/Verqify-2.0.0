@@ -60,6 +60,62 @@ function SkillChip({ skill }) {
   );
 }
 
+function SkillProofCard({ skill }) {
+  const statusConfig = {
+    verified:     { icon: '✦', color: '#22c55e', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.25)',  label: 'Verified' },
+    demonstrated: { icon: '◈', color: '#eab308', bg: 'rgba(234,179,8,0.08)',  border: 'rgba(234,179,8,0.25)',  label: 'Demonstrated' },
+    claimed:      { icon: '◇', color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.25)', label: 'Claimed' },
+  };
+  const cfg = statusConfig[skill.status] || statusConfig.claimed;
+
+  // Calculate bar width from verification score (0-100)
+  const barWidth = skill.verification_score ?? skill.verificationScore ?? 0;
+
+  // Build metadata string
+  const parts = [];
+  if (skill.repo_count || skill.repoCount) parts.push(`${skill.repo_count || skill.repoCount} repo${(skill.repo_count || skill.repoCount) > 1 ? 's' : ''}`);
+  if (skill.total_commits || skill.totalCommits) parts.push(`${skill.total_commits || skill.totalCommits} commits`);
+  if (skill.deployed_count || skill.deployedCount) parts.push(`${skill.deployed_count || skill.deployedCount} deployed`);
+  if (skill.months_active || skill.monthsActive) parts.push(`${skill.months_active || skill.monthsActive} mo active`);
+
+  const metaLine = parts.length > 0
+    ? parts.join(' · ')
+    : (skill.status === 'claimed' ? 'Mentioned in README · No code evidence found' : 'Limited evidence');
+
+  return (
+    <div style={{
+      padding: '1.25rem 1.5rem',
+      background: cfg.bg,
+      border: `1px solid ${cfg.border}`,
+      borderRadius: 12,
+      marginBottom: '0.75rem',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '1.1rem' }}>{cfg.icon}</span>
+          <span style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: '1rem' }}>{skill.name}</span>
+        </div>
+        <span style={{
+          fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.06em', color: cfg.color,
+        }}>{cfg.label}</span>
+      </div>
+      {/* Progress bar */}
+      <div style={{ height: 6, background: 'var(--border)', borderRadius: 99, marginBottom: '0.5rem', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: `${barWidth}%`,
+          background: cfg.color, borderRadius: 99,
+          transition: 'width 0.8s ease',
+        }} />
+      </div>
+      {/* Meta line */}
+      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', letterSpacing: '0.01em' }}>
+        {metaLine}
+      </div>
+    </div>
+  );
+}
+
 function RepoAuditCard({ audit }) {
   const { analysis, repo: repoName } = audit;
   const verdict = analysis?.overall_verdict;
@@ -288,17 +344,10 @@ export default function ProofVerification() {
 
               {verifiedSkills.length > 0 && (
                 <div style={{ flex: 1, minWidth: 280 }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1rem' }}>Aggregated Skill Proofs</h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {verifiedSkills.slice(0, 12).map((skill, i) => (
-                      <div key={i} style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--border)', fontSize: '0.78rem', fontWeight: 600 }}>
-                        {skill.name}
-                        <span style={{ marginLeft: '0.4rem', color: skill.status === 'verified' ? '#22c55e' : '#eab308', fontSize: '0.65rem' }}>
-                          ● {skill.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1rem' }}>Proof Strength</h4>
+                  {verifiedSkills.slice(0, 8).map((skill, i) => (
+                    <SkillProofCard key={i} skill={skill} />
+                  ))}
                 </div>
               )}
             </div>

@@ -262,6 +262,160 @@ function getOverallLevel(analyses) {
   return levels[Math.round(avg)];
 }
 
+// ─── Quantitative Skill Verification ─────────────────────────────────────────
+
+const TUTORIAL_PATTERNS = [
+  'todo-app', 'todo-list', 'todolist', 'weather-app', 'weather-api',
+  'netflix-clone', 'spotify-clone', 'twitter-clone', 'instagram-clone',
+  'calculator', 'calculator-app', 'portfolio', 'landing-page',
+  'tic-tac-toe', 'snake-game', 'rock-paper-scissors', 'quiz-app',
+  'ecommerce', 'e-commerce', 'blog-app', 'chat-app', 'notes-app',
+];
+
+/**
+ * Quantitative scoring per skill based on hard evidence.
+ * Returns { status, verificationScore, repoCount, totalCommits,
+ *           commitSpreadDays, deployedCount, monthsActive }
+ */
+export function calculateSkillVerification(skillName, skillRepos, allAnalyses) {
+  let score = 0;
+
+  // Count repos where this skill was detected
+  const repoCount = skillRepos.length;
+  if (repoCount >= 1) score += 10;
+  if (repoCount >= 3) score += 10;
+
+  // Aggregate commit data across repos with this skill
+  let totalCommits = 0;
+  let maxSpreadDays = 0;
+  let deployedCount = 0;
+  let earliestCommit = null;
+  let latestCommit = null;
+
+  for (const repoAnalysis of skillRepos) {
+    totalCommits += repoAnalysis.totalCommits || 0;
+    maxSpreadDays = Math.max(maxSpreadDays, repoAnalysis.commitSpreadDays || 0);
+    if (repoAnalysis.hasDeployment) deployedCount++;
+    // Track earliest and latest for months-active calculation
+    if (repoAnalysis.commitSpreadDays > 0) {
+      const spread = repoAnalysis.commitSpreadDays;
+      if (!earliestCommit || spread > earliestCommit) earliestCommit = spread;
+    }
+  }
+
+  // Commit depth
+  if (totalCommits > 50) score += 10;
+  if (totalCommits > 200) score += 10;
+
+  // Consistency
+  if (maxSpreadDays > 30) score += 10;
+  if (maxSpreadDays > 90) score += 10;
+
+  // Deployment
+  if (deployedCount > 0) score += 15;
+
+  // External proof (hackathon/internship) — placeholder for future uploads
+  // if (proofData.hasInternship) score += 15;
+  // if (proofData.hasHackathonWin) score += 10;
+
+  const monthsActive = Math.max(1, Math.round(maxSpreadDays / 30));
+
+  // Map to status
+  let status;
+  if (score >= 70) status = 'verified';
+  else if (score >= 35) status = 'demonstrated';
+  else status = 'claimed';
+
+  return {
+    status,
+    verificationScore: Math.min(100, score),
+    repoCount,
+    totalCommits,
+    commitSpreadDays: maxSpreadDays,
+    deployedCount,
+    monthsActive,
+  };
+}
+
+// ─── Anti-Gaming Detection ───────────────────────────────────────────────────
+
+export function detectAntiGamingFlags(repoDataList, analyses) {
+  const flags = [];
+  let penaltyScore = 0;
+
+  for (let i = 0; i < analyses.length; i++) {
+    const analysis = analyses[i];
+    const repoData = repoDataList[i];
+    if (!analysis || !repoData) continue;
+
+    const repoName = repoData.name?.toLowerCase() || '';
+
+    // 1. Tutorial detection
+    if (TUTORIAL_PATTERNS.some(p => repoName.includes(p))) {
+      flags.push(`Tutorial pattern detected: "${repoData.name}"`);
+      penaltyScore += 5;
+    }
+    if (analysis.is_tutorial_or_clone?.verdict) {
+      flags.push(`Gemini flagged "${repoData.name}" as tutorial/clone`);
+      penaltyScore += 8;
+    }
+
+    // 2. Commit spam (50+ on same day from commit messages pattern)
+    const commitMsgs = repoData.commitMessages || [];
+    const uniqueMsgs = new Set(commitMsgs);
+    if (commitMsgs.length > 10 && uniqueMsgs.size < commitMsgs.length * 0.3) {
+      flags.push(`Repetitive commit messages in "${repoData.name}" (${uniqueMsgs.size}/${commitMsgs.length} unique)`);
+      penaltyScore += 10;
+    }
+
+    // 3. Burst activity (mass commits in very short window)
+    if (analysis.commit_quality?.pattern === 'burst') {
+      flags.push(`Burst commit pattern in "${repoData.name}"`);
+      penaltyScore += 5;
+    }
+    if (analysis.commit_quality?.suspicious_activity) {
+      flags.push(`Suspicious activity: ${analysis.commit_quality.suspicious_reason || 'flagged by AI'}`);
+      penaltyScore += 10;
+    }
+
+    // 4. Fake deployment (has URL but surface-level code)
+    if (repoData.hasDeployment && analysis.code_quality?.level === 'surface') {
+      flags.push(`Deployed but surface-level code in "${repoData.name}"`);
+      penaltyScore += 5;
+    }
+  }
+
+  // 5. Account age vs activity
+  const totalCommits = repoDataList.reduce((s, r) => s + (r?.totalCommits || 0), 0);
+  const accountAge = repoDataList[0]?.accountAgeDays || 365;
+  if (accountAge < 30 && totalCommits > 200) {
+    flags.push(`New account (${accountAge} days) with ${totalCommits} commits`);
+    penaltyScore += 15;
+  } else if (accountAge < 14 && totalCommits > 50) {
+    flags.push(`Very new account (${accountAge} days) with rapid activity`);
+    penaltyScore += 10;
+  }
+
+  return { flags, penaltyScore: Math.min(penaltyScore, 40) }; // Cap penalty at 40
+}
+
+/**
+ * Compute company-facing confidence level from aggregated data.
+ */
+export function getConfidenceLevel(skills, dimensions, antiGamingFlags) {
+  const verifiedCount = skills.filter(s => s.status === 'verified').length;
+  const demonstratedCount = skills.filter(s => s.status === 'demonstrated').length;
+  const totalDeployed = skills.reduce((s, sk) => s + (sk.deployedCount || 0), 0);
+  const avgScore = dimensions
+    ? Math.round(Object.values(dimensions).reduce((a, b) => a + b, 0) / Object.keys(dimensions).length)
+    : 0;
+  const penalty = antiGamingFlags?.length || 0;
+
+  if (verifiedCount >= 2 && totalDeployed >= 2 && avgScore >= 60 && penalty === 0) return 'high';
+  if ((verifiedCount >= 1 || demonstratedCount >= 2) && avgScore >= 40 && penalty <= 2) return 'moderate';
+  return 'low';
+}
+
 // ─── Main Orchestrator ────────────────────────────────────────────────────────
 
 export async function analyzeAllRepos(githubUsername, accessToken) {
@@ -286,57 +440,96 @@ export async function analyzeAllRepos(githubUsername, accessToken) {
 
   if (meaningfulRepos.length === 0) throw new Error('No meaningful repositories found to analyse');
 
-  const analyses = await Promise.all(
-    meaningfulRepos.map(repo =>
-      collectRepoData(githubUsername, repo.name, accessToken)
-        .then(data => analyzeCodeQuality(data))
-        .catch(err => {
-          console.warn(`  Skipped ${repo.name}: ${err.message}`);
-          return null;
-        })
-    )
+  // Collect repoData AND analyses in parallel (need repoData for anti-gaming)
+  const results = await Promise.all(
+    meaningfulRepos.map(async (repo) => {
+      try {
+        const data = await collectRepoData(githubUsername, repo.name, accessToken);
+        const analysis = await analyzeCodeQuality(data);
+        return { data, analysis };
+      } catch (err) {
+        console.warn(`  Skipped ${repo.name}: ${err.message}`);
+        return null;
+      }
+    })
   );
 
-  const valid = analyses.filter(Boolean);
-  if (valid.length === 0) throw Error('All repository analyses failed');
+  const validResults = results.filter(Boolean);
+  if (validResults.length === 0) throw Error('All repository analyses failed');
 
-  const skillMap = {};
-  const hierarchy = ['claimed', 'demonstrated', 'verified'];
+  const validAnalyses = validResults.map(r => r.analysis);
+  const validRepoData = validResults.map(r => r.data);
 
-  for (const analysis of valid) {
+  // ─── Anti-Gaming Detection ───────────────────────────────────────────
+  const antiGaming = detectAntiGamingFlags(validRepoData, validAnalyses);
+
+  // ─── Skill Aggregation with Quantitative Scoring ─────────────────────
+  // First pass: collect which repos contain which skills
+  const skillRepoMap = {}; // skillName -> [{ repoData, analysis }]
+
+  for (let i = 0; i < validResults.length; i++) {
+    const { data, analysis } = validResults[i];
     for (const skill of analysis.skills_detected || []) {
       const key = skill.name.toLowerCase();
-      if (!skillMap[key]) {
-        skillMap[key] = {
-          name: skill.name,
-          status: skill.status,
-          evidenceStrength: skill.evidence_strength,
-          repoCount: 1,
-          proofs: [skill.proof],
-        };
-      } else {
-        skillMap[key].repoCount++;
-        skillMap[key].proofs.push(skill.proof);
-        const current = hierarchy.indexOf(skillMap[key].status);
-        const incoming = hierarchy.indexOf(skill.status);
-        if (incoming > current) {
-          skillMap[key].status = skill.status;
-          skillMap[key].evidenceStrength = skill.evidence_strength;
-        }
+      if (!skillRepoMap[key]) {
+        skillRepoMap[key] = { name: skill.name, repos: [], proofs: [], evidenceStrength: skill.evidence_strength };
+      }
+      skillRepoMap[key].repos.push({
+        totalCommits: data.totalCommits,
+        commitSpreadDays: data.commitSpreadDays,
+        hasDeployment: data.hasDeployment,
+      });
+      skillRepoMap[key].proofs.push(skill.proof);
+      // Keep strongest evidence
+      const strengthOrder = ['weak', 'moderate', 'strong'];
+      if (strengthOrder.indexOf(skill.evidence_strength) > strengthOrder.indexOf(skillRepoMap[key].evidenceStrength)) {
+        skillRepoMap[key].evidenceStrength = skill.evidence_strength;
       }
     }
   }
 
+  // Second pass: compute verification score for each skill
+  const allSkills = Object.entries(skillRepoMap).map(([key, skillData]) => {
+    const verification = calculateSkillVerification(skillData.name, skillData.repos, validAnalyses);
+
+    // Apply anti-gaming penalty
+    const penalizedScore = Math.max(0, verification.verificationScore - antiGaming.penaltyScore);
+    let finalStatus = verification.status;
+    if (penalizedScore < 35 && finalStatus !== 'claimed') finalStatus = 'claimed';
+    else if (penalizedScore < 70 && finalStatus === 'verified') finalStatus = 'demonstrated';
+
+    return {
+      name: skillData.name,
+      status: finalStatus,
+      evidenceStrength: skillData.evidenceStrength,
+      verificationScore: penalizedScore,
+      repoCount: verification.repoCount,
+      totalCommits: verification.totalCommits,
+      commitSpreadDays: verification.commitSpreadDays,
+      deployedCount: verification.deployedCount,
+      monthsActive: verification.monthsActive,
+      proofs: skillData.proofs,
+    };
+  });
+
+  // Sort: verified first, then demonstrated, then claimed
+  const statusOrder = { verified: 0, demonstrated: 1, claimed: 2 };
+  allSkills.sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
+
+  // ─── Dimensions ──────────────────────────────────────────────────────
   const dimensions = {
-    impact: calculateImpact(valid),
-    depth: calculateDepth(valid),
-    consistency: calculateConsistency(valid),
-    breadth: calculateBreadth(valid),
-    ships: calculateShips(valid),
+    impact: calculateImpact(validAnalyses),
+    depth: calculateDepth(validAnalyses),
+    consistency: calculateConsistency(validAnalyses),
+    breadth: calculateBreadth(validAnalyses),
+    ships: calculateShips(validAnalyses),
   };
 
-  const allSkills = Object.values(skillMap);
-  const personality = await generatePersonality(githubUsername, valid, allSkills);
+  // ─── Confidence Level ────────────────────────────────────────────────
+  const confidenceLevel = getConfidenceLevel(allSkills, dimensions, antiGaming.flags);
+
+  // ─── Personality Synthesis ───────────────────────────────────────────
+  const personality = await generatePersonality(githubUsername, validAnalyses, allSkills);
 
   return {
     skills: allSkills,
@@ -344,13 +537,16 @@ export async function analyzeAllRepos(githubUsername, accessToken) {
     personality: personality.description,
     engineerType: personality.engineer_type,
     strongestSignal: personality.strongest_signal,
-    reposAnalyzed: valid.length,
-    overallVerificationLevel: getOverallLevel(valid),
-    redFlags: valid.flatMap(a => a.overall_verdict?.red_flags || []),
-    standoutSignals: valid.flatMap(a => a.overall_verdict?.standout_signals || []),
-    repoAudits: meaningfulRepos.slice(0, valid.length).map((repo, i) => ({
+    reposAnalyzed: validAnalyses.length,
+    overallVerificationLevel: getOverallLevel(validAnalyses),
+    confidenceLevel,
+    antiGamingFlags: antiGaming.flags,
+    antiGamingPenalty: antiGaming.penaltyScore,
+    redFlags: validAnalyses.flatMap(a => a.overall_verdict?.red_flags || []),
+    standoutSignals: validAnalyses.flatMap(a => a.overall_verdict?.standout_signals || []),
+    repoAudits: meaningfulRepos.slice(0, validResults.length).map((repo, i) => ({
         repo: repo.name,
-        analysis: valid[i],
+        analysis: validAnalyses[i],
     })),
   };
 }

@@ -19,7 +19,22 @@ async function saveCandidate(studentId) {
   }
 }
 
-function CandidateCard({ studentId, username, headline, fingerprint }) {
+function ConfidenceBadge({ level }) {
+  const cfg = {
+    high:     { bg: '#dcfce7', color: '#166534', label: '🟢 High Confidence' },
+    moderate: { bg: '#fef9c3', color: '#854d0e', label: '🟡 Moderate Confidence' },
+    low:      { bg: '#fee2e2', color: '#991b1b', label: '🔴 Low Confidence' },
+  }[level] || { bg: '#f3f4f6', color: '#6b7280', label: 'Unrated' };
+  return (
+    <span style={{
+      padding: '0.3rem 0.75rem', borderRadius: 999, fontSize: '0.7rem',
+      fontWeight: 700, background: cfg.bg, color: cfg.color,
+      letterSpacing: '0.03em',
+    }}>{cfg.label}</span>
+  );
+}
+
+function CandidateCard({ studentId, username, headline, fingerprint, engineerType, confidenceLevel }) {
   // Extract top 3 skills from the radar data
   const topSkills = Array.isArray(fingerprint) 
     ? [...fingerprint].sort((a,b) => b.score - a.score).slice(0, 3).map(s => s.name)
@@ -31,10 +46,16 @@ function CandidateCard({ studentId, username, headline, fingerprint }) {
         <SkillFingerprint skills={fingerprint || []} size={100} />
       </div>
       <div style={{ flex:1 }}>
-        <h3 style={{ margin:0,fontSize:'1.1rem',fontWeight:600,marginBottom:'0.25rem' }}>@{username || 'anonymous'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+          <h3 style={{ margin:0,fontSize:'1.1rem',fontWeight:600 }}>@{username || 'anonymous'}</h3>
+          <ConfidenceBadge level={confidenceLevel} />
+        </div>
+        {engineerType && (
+          <div style={{ fontSize:'0.75rem', fontWeight: 700, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>{engineerType}</div>
+        )}
         <p style={{ color:'var(--text-secondary)',fontSize:'0.9rem',marginBottom:'1rem',lineHeight:1.4 }}>{headline || "Verified engineering candidate."}</p>
         <div style={{ display:'flex',gap:'0.6rem',flexWrap:'wrap' }}>
-          {topSkills.map(s => <span key={s} className="badge badge-indigo" style={{ fontSize:'0.7rem' }}>{s} Expert</span>)}
+          {topSkills.map(s => <span key={s} className="badge badge-indigo" style={{ fontSize:'0.7rem' }}>{s}</span>)}
         </div>
       </div>
       <div style={{ display:'flex',flexDirection:'column',gap:'0.75rem',flexShrink:0 }}>
@@ -70,7 +91,23 @@ export default function CompanyDashboard() {
       
       let filtered = data || [];
       // Client side filtering for complex JSON patterns
-      if (filter === 'Backend Heavy') {
+      if (filter === 'High Confidence') {
+        filtered = filtered.filter(c => {
+          const dims = c.dimension_scores || {};
+          const avg = Object.keys(dims).length > 0
+            ? Math.round(Object.values(dims).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0) / Object.keys(dims).length)
+            : 0;
+          return avg >= 60;
+        });
+      } else if (filter === 'Moderate+ Confidence') {
+        filtered = filtered.filter(c => {
+          const dims = c.dimension_scores || {};
+          const avg = Object.keys(dims).length > 0
+            ? Math.round(Object.values(dims).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0) / Object.keys(dims).length)
+            : 0;
+          return avg >= 40;
+        });
+      } else if (filter === 'Backend Heavy') {
         filtered = filtered.filter(c => {
           const backend = c.skill_fingerprint?.find(s => s.name === 'Backend')?.score || 0;
           return backend > 60;
@@ -107,6 +144,8 @@ export default function CompanyDashboard() {
             <option>All Skill Shapes</option>
             <option>Backend Heavy</option>
             <option>Frontend Focused</option>
+            <option>High Confidence</option>
+            <option>Moderate+ Confidence</option>
           </select>
           <input 
             className="input" 
@@ -128,15 +167,24 @@ export default function CompanyDashboard() {
             <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>Analyzing live talent pool...</div>
           ) : (
             <div style={{ display:'flex',flexDirection:'column',gap:'1.25rem' }}>
-              {candidates.length > 0 ? candidates.map(c => (
-                <CandidateCard 
-                  key={c.id}
-                  studentId={c.id}
-                  username={c.username}
-                  headline={c.bio}
-                  fingerprint={c.skill_fingerprint} 
-                />
-              )) : (
+              {candidates.length > 0 ? candidates.map(c => {
+                // Compute confidence from dimension scores
+                const dims = c.dimension_scores || {};
+                const numericDims = Object.values(dims).filter(v => typeof v === 'number');
+                const avg = numericDims.length > 0 ? Math.round(numericDims.reduce((a,b) => a+b, 0) / numericDims.length) : 0;
+                const conf = avg >= 60 ? 'high' : avg >= 40 ? 'moderate' : 'low';
+                return (
+                  <CandidateCard 
+                    key={c.id}
+                    studentId={c.id}
+                    username={c.username}
+                    headline={c.bio}
+                    fingerprint={c.skill_fingerprint}
+                    engineerType={c.engineer_type}
+                    confidenceLevel={conf}
+                  />
+                );
+              }) : (
                 <div className="glass" style={{ padding:'3rem', textAlign:'center' }}>
                   <p style={{ color:'var(--text-secondary)' }}>No live profiles found matching your criteria.</p>
                 </div>

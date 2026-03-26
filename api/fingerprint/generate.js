@@ -39,17 +39,27 @@ export default async function handler(req, res) {
       student.github_access_token
     );
 
-    // 3. Save full fingerprint to students table
+    // 3. Save full fingerprint + anti-gaming data to students table
     await supabaseAdmin
       .from('students')
       .update({ 
         fingerprint_data: result,
+        anti_gaming_flags: result.antiGamingFlags || [],
+        confidence_level: result.confidenceLevel || 'low',
         updated_at: new Date().toISOString()
       })
       .eq('id', studentId);
 
-    // 4. Update aggregated skills table
-    // Delete old skills and batch insert new ones
+    // 4. Sync confidence_level to profiles for company search
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        confidence_level: result.confidenceLevel || 'low',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', studentId);
+
+    // 5. Update aggregated skills table with full verification metadata
     await supabaseAdmin.from('skills').delete().eq('student_id', studentId);
     
     if (result.skills && result.skills.length > 0) {
@@ -58,7 +68,12 @@ export default async function handler(req, res) {
         name: s.name,
         status: s.status,
         repo_count: s.repoCount,
-        evidence_strength: s.evidenceStrength
+        evidence_strength: s.evidenceStrength,
+        verification_score: s.verificationScore || 0,
+        total_commits: s.totalCommits || 0,
+        commit_spread_days: s.commitSpreadDays || 0,
+        deployed_count: s.deployedCount || 0,
+        months_active: s.monthsActive || 0,
       }));
 
       const { error: insertErr } = await supabaseAdmin

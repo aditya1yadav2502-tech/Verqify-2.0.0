@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS public.skills (
   status TEXT NOT NULL DEFAULT 'claimed', -- claimed, demonstrated, verified
   repo_count INTEGER DEFAULT 1,
   evidence_strength TEXT,
+  verification_score INTEGER DEFAULT 0,
+  total_commits INTEGER DEFAULT 0,
+  commit_spread_days INTEGER DEFAULT 0,
+  deployed_count INTEGER DEFAULT 0,
+  months_active INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -62,10 +67,16 @@ CREATE TABLE IF NOT EXISTS public.skills (
 CREATE TABLE IF NOT EXISTS public.students (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   github_username TEXT,
-  github_access_token TEXT, -- Optional: store encrypted or if needed for background jobs
-  fingerprint_data JSONB,   -- Stores the full analyzeAllRepos result
+  github_access_token TEXT,
+  fingerprint_data JSONB,
+  anti_gaming_flags JSONB,
+  confidence_level TEXT DEFAULT 'low', -- low, moderate, high
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Backfill confidence_level on profiles for company search
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS confidence_level TEXT DEFAULT 'low';
 
 -- Enable RLS
 ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
