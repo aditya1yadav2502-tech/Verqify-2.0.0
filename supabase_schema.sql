@@ -43,7 +43,9 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS branch TEXT,
   ADD COLUMN IF NOT EXISTS year_of_study TEXT,
   ADD COLUMN IF NOT EXISTS repo_audits JSONB,   -- Per-repo Gemini deep audit results
-  ADD COLUMN IF NOT EXISTS all_skills JSONB;    -- Cross-repo aggregated skill list
+  ADD COLUMN IF NOT EXISTS all_skills JSONB,    -- Cross-repo aggregated skill list
+  ADD COLUMN IF NOT EXISTS engineer_type TEXT,  -- AI-categorized engineering role
+  ADD COLUMN IF NOT EXISTS strongest_signal TEXT; -- The single most impressive thing detected
 
 CREATE POLICY "Users can insert their own profile." ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);

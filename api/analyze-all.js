@@ -172,34 +172,49 @@ STRICT RULES:
 
 // ─── Cross-Repo Personality Synthesis ────────────────────────────────────────
 
-async function generatePersonality(githubUsername, analyses, skills) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+async function generatePersonality(username, analyses, skills) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
-  const topSkills = skills
-    .filter(s => s.status === 'verified' || s.status === 'demonstrated')
-    .sort((a, b) => (b.repoCount - a.repoCount))
-    .slice(0, 8)
-    .map(s => `${s.name} (seen in ${s.repoCount} repo${s.repoCount > 1 ? 's' : ''}, ${s.evidenceStrength} evidence)`);
-
-  const repoSummaries = analyses.map(a =>
-    `- ${a.overall_verdict?.verification_level?.toUpperCase()} level: ${a.overall_verdict?.summary?.slice(0, 120)}`
-  ).join('\n');
+  const verifiedSkills = skills.filter(s => s.status === 'verified');
+  const demonstratedSkills = skills.filter(s => s.status === 'demonstrated');
+  const redFlags = analyses.flatMap(a => a.overall_verdict?.red_flags || []);
+  const standouts = analyses.flatMap(a => a.overall_verdict?.standout_signals || []);
 
   const prompt = `
-You are writing a concise professional summary for a verified engineering identity on a hiring platform.
+You are writing the engineering identity description for a student's 
+public Verqify profile. This description will be seen by hiring companies.
 
-GitHub username: ${githubUsername}
-Verified skills (strongest evidence first): ${topSkills.join(', ')}
-Repository summaries:
-${repoSummaries}
+Student data:
+- Verified skills: ${verifiedSkills.map(s => s.name).join(', ') || 'none'}
+- Demonstrated skills: ${demonstratedSkills.map(s => s.name).join(', ') || 'none'}
+- Repos analyzed: ${analyses.length}
+- Standout signals: ${standouts.join(', ') || 'none'}
+- Red flags: ${redFlags.join(', ') || 'none'}
+- Code quality levels: ${analyses.map(a => a.code_quality?.level).join(', ')}
+- Commit patterns: ${analyses.map(a => a.commit_quality?.pattern).join(', ')}
+- Real world readiness: ${analyses.map(a => a.real_world_readiness?.level).join(', ')}
 
-Write 2-3 sentences. Be specific, direct, and factual. Do not use generic filler phrases like "passionate developer" or "team player". 
-Name concrete technologies, patterns, and capabilities that are actually evidenced.
-Return ONLY the paragraph text, no JSON, no formatting.
+Write 2-3 sentences that describe this engineer's actual working style.
+Be specific, honest, and direct. Name real patterns you observed.
+Do not use generic phrases like "passionate developer" or "quick learner."
+Do not be encouraging if the work doesn't deserve it.
+Do not mention red flags directly — just describe what the work shows.
+
+Return ONLY a JSON object, no markdown:
+{
+  "description": "2-3 sentence personality description",
+  "engineer_type": "one of: Backend Specialist, Frontend Builder, Full Stack Generalist, Systems Engineer, DevOps Engineer, ML Engineer, Mobile Developer, Early Stage Builder",
+  "strongest_signal": "the single most impressive thing about their work in one sentence"
+}
 `;
 
   const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+  const text = result.response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  }
 }
 
 // ─── Dimension Calculators ────────────────────────────────────────────────────
@@ -324,18 +339,20 @@ async function analyzeAllRepos(githubUsername, accessToken) {
 
   const allSkills = Object.values(skillMap);
 
-  // Generate holistic AI personality
+  // Generate holistic AI personality (returns { description, engineer_type, strongest_signal })
   const personality = await generatePersonality(githubUsername, valid, allSkills);
 
   return {
     skills: allSkills,
     dimensions,
-    personality,
+    // Spread personality fields to top level for easy Supabase storage
+    personality: personality.description,
+    engineerType: personality.engineer_type,
+    strongestSignal: personality.strongest_signal,
     reposAnalyzed: valid.length,
     overallVerificationLevel: getOverallLevel(valid),
     redFlags: valid.flatMap(a => a.overall_verdict?.red_flags || []),
     standoutSignals: valid.flatMap(a => a.overall_verdict?.standout_signals || []),
-    // Include per-repo breakdown for the UI
     repoAudits: meaningfulRepos.slice(0, valid.length).map((repo, i) => ({
       repo: repo.name,
       analysis: valid[i],

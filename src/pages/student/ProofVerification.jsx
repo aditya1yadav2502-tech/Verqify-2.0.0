@@ -148,18 +148,22 @@ export default function ProofVerification() {
   const { user, profile } = useAuth();
   const [syncing, setSyncing] = useState(false);
   const [repoAudits, setRepoAudits] = useState(null);
+  const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
-    async function loadAudits() {
+    async function loadData() {
       if (!user || !supabase) return;
       const { data } = await supabase
         .from('profiles')
-        .select('repo_audits')
+        .select('repo_audits, engineer_type, strongest_signal, all_skills')
         .eq('id', user.id)
         .single();
-      if (data?.repo_audits) setRepoAudits(data.repo_audits);
+      if (data) {
+        setRepoAudits(data.repo_audits);
+        setProfileData(data);
+      }
     }
-    loadAudits();
+    loadData();
   }, [user]);
 
   const handleForceSync = async () => {
@@ -193,37 +197,44 @@ export default function ProofVerification() {
         </p>
       </header>
 
+      {/* Engineering Identity */}
+      {profileData?.engineer_type && (
+        <section style={{ marginBottom: '3rem' }}>
+          <div className="glass" style={{ padding: '2rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 280 }}>
+                <div className="label" style={{ color: 'var(--accent-indigo)', marginBottom: '0.4rem' }}>Verified Engineering Identity</div>
+                <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '2rem', fontWeight: 800, margin: '0 0 1rem' }}>
+                  {profileData.engineer_type}
+                </h2>
+                <div style={{ paddingLeft: '1rem', borderLeft: '3px solid var(--accent-indigo)', marginBottom: '1.5rem' }}>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
+                    "{profileData.strongest_signal}"
+                  </p>
+                </div>
+              </div>
+
+              {profileData.all_skills && (
+                <div style={{ flex: 1, minWidth: 280 }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1rem' }}>Aggregated Skill Proofs</h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {profileData.all_skills.slice(0, 12).map((skill, i) => (
+                      <div key={i} title={skill.proofs?.join(' | ')} style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--border)', fontSize: '0.78rem', fontWeight: 600 }}>
+                        {skill.name}
+                        <span style={{ marginLeft: '0.4rem', color: skill.status === 'verified' ? '#22c55e' : '#eab308', fontSize: '0.65rem' }}>
+                          ● {skill.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Connected account */}
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '1.4rem', fontWeight: 600, marginBottom: '1.25rem' }}>Connected Accounts</h2>
-        <div className="glass" style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <div style={{ width: 44, height: 44, background: 'var(--bg-elevated)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.2c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
-                <path d="M9 18c-4.51 2-5-2-7-2"/>
-              </svg>
-            </div>
-            <div>
-              <h4 style={{ fontFamily: 'var(--font-head)', margin: '0 0 0.2rem', fontWeight: 600 }}>GitHub</h4>
-              <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.88rem' }}>
-                {user?.app_metadata?.provider === 'github' ? `Connected as @${user.app_metadata?.user_name || user.email}` : 'Connected via OAuth'}
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span className="badge badge-indigo" style={{ fontSize: '0.7rem' }}>CONNECTED</span>
-            <button
-              onClick={handleForceSync}
-              disabled={syncing}
-              className="btn btn-primary"
-              style={{ padding: '0.6rem 1.5rem', fontSize: '0.85rem' }}
-            >
-              {syncing ? 'Analysing...' : 'Run Deep Audit'}
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* Per-repo audit cards */}
       <section>

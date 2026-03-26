@@ -196,6 +196,8 @@ export async function syncGitHubData() {
       .update({
         skill_fingerprint: radarData,
         ai_personality: result.personality,
+        engineer_type: result.engineerType,
+        strongest_signal: result.strongestSignal,
         dimension_scores: {
           ...result.dimensions,
           overallVerificationLevel: result.overallVerificationLevel,
