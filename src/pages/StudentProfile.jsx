@@ -69,18 +69,39 @@ export default function StudentProfile() {
       </header>
 
       {/* Layout Grid for Fingerprint & Personality */}
-      <section className="animate-fade-in-up delay-100" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1fr', gap: '4rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '4rem', marginBottom: '4rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--color-bg-alt)', padding: '2rem' }}>
+      <section className="animate-fade-in-up delay-100" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1.2fr', gap: '4rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '4rem', marginBottom: '4rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--color-bg-alt)', padding: '2rem', borderRadius: '1rem' }}>
           <SkillFingerprint skills={profileSkills} size={320} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', fontFamily: 'var(--font-serif)', fontWeight: '400' }}>Engineering Identity</h2>
-          <p className="text-lead" style={{ marginBottom: '2rem', fontStyle: 'italic', fontFamily: 'var(--font-serif)' }}>
-            "{profile.bio || 'Your work, verified. Your skills, proven.'}"
-          </p>
-          <p className="text-secondary" style={{ fontSize: '1.05rem' }}>
-            {profile.full_name} has a verified engineering shape generated from their GitHub contributions and project history.
-          </p>
+          <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', fontFamily: 'var(--font-head)', fontWeight: '600' }}>Engineering Identity</h2>
+          
+          {profile.ai_personality ? (
+            <div className="glass" style={{ padding: '2rem', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--accent-indigo)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>AI Synthesis</div>
+              <p style={{ fontSize: '1.1rem', fontStyle: 'italic', color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                "{profile.ai_personality}"
+              </p>
+            </div>
+          ) : (
+            <p className="text-secondary" style={{ marginBottom: '2rem', lineHeight: 1.6 }}>
+              {profile.bio || 'Verified engineer with a unique capability shape generated from contributions.'}
+            </p>
+          )}
+
+          {profile.dimension_scores && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1.5rem' }}>
+              {Object.entries(profile.dimension_scores).map(([key, score]) => (
+                <div key={key}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{key}</div>
+                  <div className="gradient-text" style={{ fontSize: '1.4rem', fontWeight: 700 }}>{score}</div>
+                  <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', marginTop: '0.4rem' }}>
+                    <div style={{ height: '100%', width: `${score}%`, background: 'var(--accent-indigo)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

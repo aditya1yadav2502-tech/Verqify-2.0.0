@@ -1,27 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import SkillFingerprint from '../../components/SkillFingerprint';
-import { supabase } from '../../lib/supabaseClient';
+async function saveCandidate(studentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return toast.error('Please log in.');
+  
+  const { error } = await supabase
+    .from('saved_candidates')
+    .insert({ company_id: user.id, student_id: studentId });
+  
+  if (error) {
+    if (error.code === '23505') toast.info('Candidate already in your shortlist.');
+    else toast.error(error.message);
+  } else {
+    toast.success('Candidate saved to shortlist.');
+  }
+}
 
-function CandidateCard({ headline, skills, fingerprint }) {
-  const displaySkills = Array.isArray(skills) ? skills : [];
-  const displayFingerprint = Array.isArray(fingerprint) ? fingerprint : [
-    { name: 'Backend', score: 20 }, { name: 'Database', score: 20 }, 
-    { name: 'DevOps', score: 20 }, { name: 'Frontend', score: 20 }, { name: 'Architecture', score: 20 }
-  ];
+function CandidateCard({ studentId, username, headline, fingerprint }) {
+  // Extract top 3 skills from the radar data
+  const topSkills = Array.isArray(fingerprint) 
+    ? [...fingerprint].sort((a,b) => b.score - a.score).slice(0, 3).map(s => s.name)
+    : ['Engineering'];
+
   return (
     <div className="glass" style={{ padding:'2rem',display:'flex',gap:'2.5rem',alignItems:'center' }}>
       <div style={{ width:110,height:110,background:'var(--bg-elevated)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative' }}>
-        <SkillFingerprint skills={displayFingerprint} size={100} />
+        <SkillFingerprint skills={fingerprint || []} size={100} />
       </div>
       <div style={{ flex:1 }}>
-        <p style={{ color:'var(--text-secondary)',fontSize:'0.95rem',marginBottom:'1rem',lineHeight:1.5 }}>{headline || "Verified engineering candidate."}</p>
+        <h3 style={{ margin:0,fontSize:'1.1rem',fontWeight:600,marginBottom:'0.25rem' }}>@{username || 'anonymous'}</h3>
+        <p style={{ color:'var(--text-secondary)',fontSize:'0.9rem',marginBottom:'1rem',lineHeight:1.4 }}>{headline || "Verified engineering candidate."}</p>
         <div style={{ display:'flex',gap:'0.6rem',flexWrap:'wrap' }}>
-          {displaySkills.slice(0, 4).map(s => <span key={s} className="badge badge-green" style={{ fontSize:'0.75rem' }}>{s} · Verified</span>)}
+          {topSkills.map(s => <span key={s} className="badge badge-indigo" style={{ fontSize:'0.7rem' }}>{s} Expert</span>)}
         </div>
       </div>
       <div style={{ display:'flex',flexDirection:'column',gap:'0.75rem',flexShrink:0 }}>
-        <button className="btn btn-primary" style={{ padding:'0.75rem 1.75rem',fontSize:'0.9rem' }}>View Profile</button>
-        <button className="btn btn-secondary" style={{ padding:'0.75rem 1.75rem',fontSize:'0.9rem' }}>Save Candidate</button>
+        <a href={`/s/${username}`} className="btn btn-primary" style={{ padding:'0.7rem 1.75rem',fontSize:'0.85rem',textAlign:'center',textDecoration:'none' }}>View Profile</a>
+        <button onClick={() => saveCandidate(studentId)} className="btn btn-secondary" style={{ padding:'0.7rem 1.75rem',fontSize:'0.85rem' }}>Save Candidate</button>
       </div>
     </div>
   );
@@ -30,21 +43,45 @@ function CandidateCard({ headline, skills, fingerprint }) {
 export default function CompanyDashboard() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('All Skill Shapes');
 
   useEffect(() => {
     async function fetchCandidates() {
       if (!supabase) return;
-      const { data } = await supabase
+      setLoading(true);
+      
+      let query = supabase
         .from('profiles')
         .select('*')
-        .eq('is_discoverable', true)
-        .limit(10);
+        .eq('is_discoverable', true);
+
+      if (search) {
+        query = query.or(`full_name.ilike.%${search}%,bio.ilike.%${search}%,username.ilike.%${search}%`);
+      }
       
-      if (data) setCandidates(data);
+      const { data } = await query.limit(10);
+      
+      let filtered = data || [];
+      // Client side filtering for complex JSON patterns
+      if (filter === 'Backend Heavy') {
+        filtered = filtered.filter(c => {
+          const backend = c.skill_fingerprint?.find(s => s.name === 'Backend')?.score || 0;
+          return backend > 60;
+        });
+      } else if (filter === 'Frontend Focused') {
+        filtered = filtered.filter(c => {
+          const frontend = c.skill_fingerprint?.find(s => s.name === 'Frontend')?.score || 0;
+          return frontend > 60;
+        });
+      }
+      
+      setCandidates(filtered);
       setLoading(false);
     }
-    fetchCandidates();
-  }, []);
+    const timeout = setTimeout(fetchCandidates, 300);
+    return () => clearTimeout(timeout);
+  }, [search, filter]);
 
   return (
     <div style={{ maxWidth:1040 }}>
@@ -55,19 +92,31 @@ export default function CompanyDashboard() {
           <p style={{ color:'var(--text-secondary)',fontSize:'1.1rem',marginTop:'0.5rem' }}>Search engineers by their unique engineering fingerprint.</p>
         </div>
         <div style={{ display:'flex',gap:'1rem',alignItems:'center' }}>
-          <select className="input" style={{ width:'auto',minWidth:180 }}>
+          <select 
+            className="input" 
+            style={{ width:'auto',minWidth:180 }}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
             <option>All Skill Shapes</option>
             <option>Backend Heavy</option>
             <option>Frontend Focused</option>
-            <option>Full Stack Balanced</option>
           </select>
-          <input className="input" placeholder="Search by skill (e.g. Rust)..." style={{ width:280 }} />
+          <input 
+            className="input" 
+            placeholder="Search by keywords..." 
+            style={{ width:280 }} 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </header>
       
       <div style={{ display:'flex',flexDirection:'column',gap:'1.5rem' }}>
         <div style={{ borderLeft:'4px solid var(--accent-indigo)',paddingLeft:'2rem' }}>
-          <h2 style={{ fontFamily:'var(--font-head)',fontSize:'1.1rem',fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'1.5rem' }}>Top Matches</h2>
+          <h2 style={{ fontFamily:'var(--font-head)',fontSize:'1.1rem',fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'1.5rem' }}>
+            {candidates.length} Verified Candidates
+          </h2>
           
           {loading ? (
             <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-muted)' }}>Analyzing live talent pool...</div>
@@ -76,13 +125,14 @@ export default function CompanyDashboard() {
               {candidates.length > 0 ? candidates.map(c => (
                 <CandidateCard 
                   key={c.id}
+                  studentId={c.id}
+                  username={c.username}
                   headline={c.bio}
-                  skills={[]} // In a real app we'd compute this from the fingerprint
                   fingerprint={c.skill_fingerprint} 
                 />
               )) : (
                 <div className="glass" style={{ padding:'3rem', textAlign:'center' }}>
-                  <p style={{ color:'var(--text-secondary)' }}>No live profiles found yet. Invite students to claim their shapes.</p>
+                  <p style={{ color:'var(--text-secondary)' }}>No live profiles found matching your criteria.</p>
                 </div>
               )}
             </div>
@@ -92,3 +142,4 @@ export default function CompanyDashboard() {
     </div>
   );
 }
+

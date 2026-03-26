@@ -12,81 +12,56 @@ const GithubIcon = () => (
   </svg>
 );
 
+const GoogleIcon = () => (
+  <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+  </svg>
+);
+
 export default function LogIn() {
-  const [step, setStep] = React.useState(1); // 1: details, 2: OTP
-  const [otp, setOtp] = React.useState('');
   const [form, setForm] = React.useState({
-    collegeEmail: '',
-    fullName: '',
-    college: '',
-    branch: 'CSE',
-    yearOfStudy: '1st',
+    email: '',
+    password: '',
   });
+  const [loading, setLoading] = React.useState(false);
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const isCollegeEmail = (email) => /@.+\.(edu|ac\.[a-z]{2,})$/i.test(email.trim());
-
-  const handleNext = async (e) => {
+  const handleLogIn = async (e) => {
     e.preventDefault();
-    if (step === 1) {
-      if (!supabase) {
-        toast.error("Supabase not connected. check .env");
-        return;
-      }
-      if (!form.fullName.trim()) { toast.error('Please enter your full name'); return; }
-      if (!form.college.trim()) { toast.error('Please enter your college name'); return; }
+    if (!supabase) { toast.error("Supabase not connected. check .env"); return; }
+    
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: form.email.trim().toLowerCase(),
+      password: form.password,
+    });
 
-      const normalizedEmail = form.collegeEmail.trim().toLowerCase();
-      if (!isCollegeEmail(normalizedEmail)) {
-        toast.error('Use a valid college email ID (e.g. name@college.edu)');
-        return;
-      }
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: normalizedEmail,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: authRedirectUrl,
-        },
-      });
-
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(`OTP sent to ${normalizedEmail}`);
-        setStep(2);
-      }
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
     } else {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: form.collegeEmail.trim().toLowerCase(),
-        token: otp,
-        type: 'email'
-      });
-
-      if (error) {
-        toast.error(error.message);
-      } else {
-        if (data?.user?.id) {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            full_name: form.fullName.trim(),
-            college: form.college.trim(),
-            branch: form.branch,
-            year_of_study: form.yearOfStudy,
-            updated_at: new Date().toISOString(),
-          });
-        }
-        toast.success('Welcome back!');
-        window.location.href = '/dashboard';
-      }
+      toast.success('Welcome back!');
+      window.location.href = '/dashboard';
     }
   };
 
-  const handleGithub = async () => {
-    if (!supabase) { console.warn('Supabase not configured — running in demo mode.'); window.location.href = '/dashboard'; return; }
-    await supabase.auth.signInWithOAuth({ provider: 'github', options: { scopes: 'repo read:user', redirectTo: `${window.location.origin}/dashboard` } });
+  const handleGoogle = async () => {
+    if (!supabase) { toast.warning('Supabase not configured. Using demo mode.'); window.location.href = '/dashboard'; return; }
+    await supabase.auth.signInWithOAuth({ 
+      provider: 'google', 
+      options: { redirectTo: `${window.location.origin}/dashboard` } 
+    });
   };
+
+  const handleGithub = async () => {
+    if (!supabase) { toast.warning('Supabase not configured. Using demo mode.'); window.location.href = '/dashboard'; return; }
+    await supabase.auth.signInWithOAuth({ 
+      provider: 'github', 
+      options: { scopes: 'repo read:user', redirectTo: `${window.location.origin}/dashboard` } 
+    });
+  };
+
   return (
     <div>
       <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
@@ -95,77 +70,45 @@ export default function LogIn() {
       <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
         Log in to your Verqify profile.
       </p>
-      <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }} onSubmit={handleNext}>
-        {step === 1 ? (
-          <>
-            {/* Identity fields */}
-            <input
-              className="input"
-              type="text"
-              placeholder="Full Name"
-              value={form.fullName}
-              onChange={set('fullName')}
-              required
-            />
-            <input
-              className="input"
-              type="text"
-              placeholder="College / University"
-              value={form.college}
-              onChange={set('college')}
-              required
-            />
-            <select className="input" value={form.branch} onChange={set('branch')}>
-              <option value="CSE">CSE — Computer Science & Engineering</option>
-              <option value="ECE">ECE — Electronics & Communication</option>
-              <option value="IT">IT — Information Technology</option>
-              <option value="ME">ME — Mechanical Engineering</option>
-              <option value="CE">CE — Civil Engineering</option>
-              <option value="EE">EE — Electrical Engineering</option>
-              <option value="Other">Other</option>
-            </select>
-            <select className="input" value={form.yearOfStudy} onChange={set('yearOfStudy')}>
-              <option value="1st">1st Year</option>
-              <option value="2nd">2nd Year</option>
-              <option value="3rd">3rd Year</option>
-              <option value="4th">4th Year</option>
-              <option value="Alumni">Alumni</option>
-            </select>
 
-            {/* Auth field */}
-            <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0' }} />
-            <input
-              className="input"
-              type="email"
-              placeholder="College Email ID"
-              value={form.collegeEmail}
-              onChange={set('collegeEmail')}
-              required
-            />
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.25rem' }}>Get OTP →</button>
-          </>
-        ) : (
-          <>
-            <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Enter the code sent to <b>{form.collegeEmail}</b></span>
-            </div>
-            <input className="input" type="text" placeholder="6-digit OTP" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} required />
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Login</button>
-            <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>← Go back</button>
-          </>
-        )}
+      <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }} onSubmit={handleLogIn}>
+        <input
+          className="input"
+          type="email"
+          placeholder="Email Address"
+          value={form.email}
+          onChange={set('email')}
+          required
+        />
+        <input
+          className="input"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={set('password')}
+          required
+        />
+        <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
+          {loading ? 'Logging in...' : 'Sign In →'}
+        </button>
       </form>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
         <div className="divider" style={{ flex: 1, margin: 0 }} />
-        <span className="label">or</span>
+        <span className="label">or continue with</span>
         <div className="divider" style={{ flex: 1, margin: 0 }} />
       </div>
 
-      <button onClick={handleGithub} className="btn btn-secondary" style={{ width: '100%', gap: '0.75rem' }}>
-        <GithubIcon /> Log In with GitHub
-      </button>
-      <p style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <button onClick={handleGoogle} className="btn btn-secondary" style={{ width: '100%', gap: '0.75rem', justifyContent:'center' }}>
+          <GoogleIcon /> Google
+        </button>
+        <button onClick={handleGithub} className="btn btn-secondary" style={{ width: '100%', gap: '0.75rem', justifyContent:'center' }}>
+          <GithubIcon /> GitHub
+        </button>
+      </div>
+
+      <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
         No account? <Link to="/signup" style={{ color: 'var(--accent-indigo)', fontWeight: 500 }}>Sign Up</Link>
       </p>
     </div>

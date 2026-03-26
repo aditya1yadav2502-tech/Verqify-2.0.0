@@ -60,7 +60,7 @@ export default function Onboarding() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Full Name *</label>
-              <input className="input" type="text" placeholder="e.g. Aditya Yadav" value={form.full_name} onChange={set('full_name')} required style={{ width: '100%' }} />
+              <input className="input" type="text" placeholder="Enter your full name" value={form.full_name} onChange={set('full_name')} required style={{ width: '100%' }} />
             </div>
 
             <div>

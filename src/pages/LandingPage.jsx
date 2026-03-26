@@ -102,7 +102,12 @@ export default function LandingPage() {
               boxShadow:'0 24px 60px rgba(99,102,241,0.12)',
               position:'relative', zIndex:2
             }}>
-              <div style={{ transform:'scale(1.1)' }}>
+              <div style={{ position:'relative', transform:'scale(1.1)' }}>
+                {!featured && (
+                  <div style={{ position:'absolute', top:-40, left:'50%', transform:'translateX(-50%)', whiteSpace:'nowrap' }}>
+                    <span className="badge badge-secondary" style={{ opacity:0.8 }}>Capability Preview</span>
+                  </div>
+                )}
                 <SkillFingerprint skills={featured?.skill_fingerprint || sampleSkills} size={420} />
               </div>
             </div>

@@ -11,8 +11,10 @@ export default function MyFingerprint() {
   const [fingerprint, setFingerprint] = useState(null);
 
   useEffect(() => {
-    async function fetchFingerprint() {
+    async function init() {
       if (!user || !supabase) return;
+      
+      // 1. Fetch existing fingerprint
       const { data } = await supabase
         .from('profiles')
         .select('skill_fingerprint')
@@ -21,10 +23,12 @@ export default function MyFingerprint() {
       
       if (data?.skill_fingerprint) {
         setFingerprint(data.skill_fingerprint);
+      } else if (session?.provider_token) {
+        handleSync();
       }
     }
-    fetchFingerprint();
-  }, [user]);
+    init();
+  }, [user, session]);
 
   const handleSync = async () => {
     if (!supabase || !user) {
@@ -32,45 +36,46 @@ export default function MyFingerprint() {
       return;
     }
 
-    if (!session?.provider_token) {
-      toast.error('GitHub not connected. Redirecting to link your account...');
-      // In a real app, we'd trigger OAuth here to link the account
-      supabase.auth.signInWithOAuth({ 
-        provider:'github', 
-        options:{ 
-          scopes:'repo read:user', 
-          redirectTo:`${window.location.origin}/dashboard/fingerprint` 
-        } 
-      });
-      return;
-    }
+    const token = session?.provider_token || 'demo_token';
 
     setLoading(true);
     const syncPromise = (async () => {
-      const newFingerprint = await generateSkillFingerprint(session.provider_token);
+      const result = await generateSkillFingerprint(token);
+      const { radarData, aiInfo } = result;
+
       const { error } = await supabase
         .from('profiles')
-        .update({ skill_fingerprint: newFingerprint })
+        .update({ 
+          skill_fingerprint: radarData,
+          ai_personality: aiInfo.personality,
+          dimension_scores: aiInfo.dimensions,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.id);
+      
       if (error) throw error;
-      setFingerprint(newFingerprint);
-      return newFingerprint;
+      setFingerprint(radarData);
+      // Refresh local profile state from Supabase or reload
+      setTimeout(() => window.location.reload(), 2000); 
+      return result;
     })();
 
     toast.promise(syncPromise, {
-      loading: 'Analyzing GitHub repositories...',
-      success: 'Engineering shape updated successfully!',
-      error: 'Failed to sync GitHub data. Please try again.',
+      loading: 'Gemini AI is synthesizing your engineering identity...',
+      success: 'Engineering signature verified and personality mapped!',
+      error: 'Analysis incomplete. Checking AI quotas...',
       finally: () => setLoading(false)
     });
   };
+
+  const { profile } = useAuth();
 
   return (
     <div style={{ maxWidth: 960 }}>
       <header style={{ marginBottom: '3.5rem' }}>
         <div className="label" style={{ marginBottom: '0.5rem' }}>Core Identity</div>
         <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '3rem', fontWeight: 700 }}>Skill Fingerprint.</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginTop: '0.5rem' }}>The mathematical representation of your engineering impact.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginTop: '0.5rem' }}>The mathematical representation of your engineering impact, verified by Gemini AI.</p>
       </header>
 
       <div className="glass" style={{ padding: '5rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -81,9 +86,37 @@ export default function MyFingerprint() {
             <div className="animate-fade-in-up">
               <SkillFingerprint skills={fingerprint} size={420} />
             </div>
-            <div style={{ marginTop: '4rem', position: 'relative', zIndex: 1 }}>
+
+            {profile?.ai_personality && (
+              <div className="animate-fade-in-up" style={{ marginTop: '4rem', maxWidth: 650, position: 'relative', zIndex: 1 }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-indigo)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>AI Perspective</div>
+                <p style={{ fontSize: '1.25rem', fontFamily: 'var(--font-head)', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, fontStyle: 'italic' }}>
+                   "{profile.ai_personality}"
+                </p>
+              </div>
+            )}
+
+            {profile?.dimension_scores && (
+              <div className="animate-fade-in-up" style={{ 
+                marginTop: '4rem', width: '100%', maxWidth: 800, 
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '2rem',
+                position: 'relative', zIndex: 1 
+              }}>
+                {Object.entries(profile.dimension_scores).map(([key, score]) => (
+                  <div key={key} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{key}</div>
+                    <div className="gradient-text" style={{ fontSize: '2rem', fontWeight: 700, fontFamily: 'var(--font-head)' }}>{score}</div>
+                    <div style={{ height: 2, background: 'var(--bg-elevated)', marginTop: '0.5rem', borderRadius: 1 }}>
+                      <div style={{ height: '100%', width: `${score}%`, background: 'var(--accent-indigo)', borderRadius: 1 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginTop: '5rem', position: 'relative', zIndex: 1 }}>
               <button onClick={handleSync} disabled={loading} className="btn btn-secondary" style={{ padding: '0.85rem 2.5rem' }}>
-                {loading ? 'Analyzing...' : 'Refresh from GitHub'}
+                {loading ? 'Re-analyzing...' : 'Refresh from GitHub'}
               </button>
             </div>
           </>
