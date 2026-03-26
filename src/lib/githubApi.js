@@ -1,3 +1,4 @@
+import { supabase } from './supabaseClient';
 import { analyzeEngineeringIdentity } from './gemini';
 
 export async function fetchGithubProfile(providerToken) {
@@ -106,4 +107,37 @@ export async function generateSkillFingerprint(providerToken) {
     ],
     aiInfo
   };
+}
+
+/**
+ * Orchestrates the full sync: GitHub Fetch -> Gemini Analysis -> Supabase Update
+ */
+export async function syncGitHubData() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.provider_token;
+
+  if (!token) {
+    console.error('No GitHub token found in session');
+    return null;
+  }
+
+  try {
+    const { radarData, aiInfo } = await generateSkillFingerprint(token);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        skill_fingerprint: radarData,
+        ai_personality: aiInfo.personality,
+        dimension_scores: aiInfo.dimensions,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', session.user.id);
+
+    if (error) throw error;
+    return radarData;
+  } catch (err) {
+    console.error('Sync failed:', err);
+    return null;
+  }
 }
