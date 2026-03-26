@@ -199,31 +199,42 @@ export default function ProofVerification() {
     const tid = toast.loading('Gemini 1.5 Pro is deep-auditing your repositories...');
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.provider_token;
+      let token = session?.provider_token;
 
+      // 1. If no token in session, check if we have it in DB
       if (!token) {
-        throw new Error('No GitHub token found in session. Please log in with GitHub.');
+        const { data: student } = await supabase
+          .from('students')
+          .select('github_access_token')
+          .eq('id', user.id)
+          .single();
+        if (student?.github_access_token) {
+          token = student.github_access_token;
+        }
       }
 
-      // Fetch profile to get username
-      const ghRes = await fetch('https://api.github.com/user', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const ghProfile = await ghRes.json();
+      // 2. If STILL no token, we need them to connect
+      if (!token) {
+        throw new Error('No GitHub connection found. Please Sign In with GitHub again to authorize.');
+      }
 
-      // Ensure student record exists for the API to read
-      const { error: upsertErr } = await supabase
-        .from('students')
-        .upsert({
-          id: user.id,
-          github_username: ghProfile.login,
-          github_access_token: token,
-          updated_at: new Date().toISOString(),
+      // 3. Optional: Refresh student record if we have a fresh session token
+      if (session?.provider_token) {
+        const ghRes = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${token}` }
         });
+        if (ghRes.ok) {
+          const ghProfile = await ghRes.json();
+          await supabase.from('students').upsert({
+            id: user.id,
+            github_username: ghProfile.login,
+            github_access_token: token,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      }
 
-      if (upsertErr) throw new Error(`Failed to sync credentials: ${upsertErr.message}`);
-
-      // Now trigger the generation API
+      // 4. Trigger the generation API
       const response = await fetch('/api/fingerprint/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,11 +242,11 @@ export default function ProofVerification() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Unknown server error' }));
+        const err = await response.json().catch(() => ({ error: 'Analysis failed (may be rate limited)' }));
         throw new Error(err.error || 'Fingerprint generation failed');
       }
 
-      toast.success('Repository audit complete — identity updated!', { id: tid });
+      toast.success('Audit complete — identity updated!', { id: tid });
       setTimeout(() => window.location.reload(), 1200);
     } catch (err) {
       console.error('Handled Sync Error:', err);
