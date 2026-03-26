@@ -54,7 +54,7 @@ async function analyzeRepo(token, repo, ownerLogin, accountAgeDays) {
   const res = await fetch(`${base}/api/analyze-repo`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, repo, ownerLogin, accountAgeDays }),
+    body: JSON.stringify({ token, repoName: repo.name, githubUsername: ownerLogin }),
   });
 
   if (!res.ok) {

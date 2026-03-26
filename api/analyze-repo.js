@@ -2,117 +2,90 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ─── GitHub Data Collectors ───────────────────────────────────────────────────
+// ─── GitHub Data Collector ────────────────────────────────────────────────────
 
-async function ghFetch(url, token) {
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'Verqify-Analysis-Engine/1.0',
-    },
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
+async function collectRepoData(githubUsername, repoName, accessToken) {
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/vnd.github.v3+json',
+    'User-Agent': 'Verqify-Analysis-Engine/1.0',
+  };
+  const base = 'https://api.github.com';
 
-async function ghRaw(url, token) {
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3.raw',
-      'User-Agent': 'Verqify-Analysis-Engine/1.0',
-    },
-  });
-  if (!res.ok) return null;
-  return res.text();
-}
+  // Fetch repo metadata
+  const repo = await fetch(`${base}/repos/${githubUsername}/${repoName}`, { headers }).then(r => r.json());
 
-async function enrichRepo(token, repo, ownerLogin) {
-  const base = `https://api.github.com/repos/${ownerLogin}/${repo.name}`;
-
-  // Fetch in parallel to minimize latency
-  const [commits, languages, rawTree, readme, fullRepo] = await Promise.all([
-    ghFetch(`${base}/commits?per_page=20`, token),
-    ghFetch(`${base}/languages`, token),
-    ghFetch(`${base}/git/trees/HEAD?recursive=1`, token),
-    ghRaw(`${base}/readme`, token),
-    ghFetch(base, token),
+  // Fetch in parallel
+  const [languages, commits, tree, readmeRes] = await Promise.all([
+    fetch(`${base}/repos/${githubUsername}/${repoName}/languages`, { headers }).then(r => r.json()),
+    fetch(`${base}/repos/${githubUsername}/${repoName}/commits?per_page=100`, { headers }).then(r => r.json()),
+    fetch(`${base}/repos/${githubUsername}/${repoName}/git/trees/HEAD?recursive=1`, { headers }).then(r => r.json()),
+    fetch(`${base}/repos/${githubUsername}/${repoName}/readme`, { headers }).then(r => r.json()),
   ]);
 
-  // Commit analysis
-  const commitMessages = Array.isArray(commits)
-    ? commits.map((c) => c.commit?.message?.split('\n')[0] || '').filter(Boolean)
-    : [];
-  const totalCommits = fullRepo?.size ? Math.max(commitMessages.length, 1) : commitMessages.length;
+  // Properly decode README from base64
+  const readme = readmeRes.content
+    ? Buffer.from(readmeRes.content, 'base64').toString('utf8').slice(0, 2000)
+    : 'No README found';
 
-  // Commit spread (days between oldest and newest)
-  let commitSpreadDays = 0;
-  if (Array.isArray(commits) && commits.length >= 2) {
-    const oldest = new Date(commits[commits.length - 1]?.commit?.author?.date);
-    const newest = new Date(commits[0]?.commit?.author?.date);
-    commitSpreadDays = Math.round((newest - oldest) / 86400000);
-  }
+  // Sample code from main source files
+  const mainFiles = tree.tree
+    ?.filter(f =>
+      f.type === 'blob' &&
+      (f.path.endsWith('.js') || f.path.endsWith('.ts') ||
+       f.path.endsWith('.py') || f.path.endsWith('.jsx') || f.path.endsWith('.tsx')) &&
+      !f.path.includes('node_modules') &&
+      !f.path.includes('.min.') &&
+      !f.path.includes('dist/')
+    )
+    .slice(0, 3) || [];
 
-  // Days since last commit
-  let daysSinceLastCommit = 999;
-  if (Array.isArray(commits) && commits[0]?.commit?.author?.date) {
-    daysSinceLastCommit = Math.round(
-      (Date.now() - new Date(commits[0].commit.author.date)) / 86400000
-    );
-  }
-
-  // File tree — top-level + key files (limit to 80 entries)
-  const fileTree = Array.isArray(rawTree?.tree)
-    ? rawTree.tree
-        .filter((f) => f.type === 'blob')
-        .slice(0, 80)
-        .map((f) => f.path)
-        .join('\n')
-    : 'Unable to fetch file tree';
-
-  // Sample code — grab up to 3 key source files
   let sampleCode = '';
-  const codeExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.go', '.rs', '.java'];
-  const interestingFiles = Array.isArray(rawTree?.tree)
-    ? rawTree.tree
-        .filter(
-          (f) =>
-            f.type === 'blob' &&
-            codeExtensions.some((ext) => f.path.endsWith(ext)) &&
-            !f.path.includes('node_modules') &&
-            !f.path.includes('.min.')
-        )
-        .slice(0, 3)
-    : [];
-
-  for (const file of interestingFiles) {
-    const content = await ghRaw(
-      `https://api.github.com/repos/${ownerLogin}/${repo.name}/contents/${file.path}`,
-      token
-    );
-    if (content) {
-      sampleCode += `\n\n// FILE: ${file.path}\n${content.slice(0, 2000)}`;
+  for (const file of mainFiles) {
+    const content = await fetch(`${base}/repos/${githubUsername}/${repoName}/contents/${file.path}`, { headers }).then(r => r.json());
+    if (content.content) {
+      const decoded = Buffer.from(content.content, 'base64').toString('utf8');
+      sampleCode += `\n\n// FILE: ${file.path}\n${decoded.slice(0, 800)}`;
     }
   }
 
+  // Commit spread
+  const commitDates = Array.isArray(commits)
+    ? commits.map(c => new Date(c.commit.author.date)).sort((a, b) => a - b)
+    : [];
+  const commitSpreadDays = commitDates.length > 1
+    ? Math.floor((commitDates[commitDates.length - 1] - commitDates[0]) / 86400000)
+    : 0;
+
+  // Account age
+  const userRes = await fetch(`${base}/users/${githubUsername}`, { headers }).then(r => r.json());
+  const accountAgeDays = Math.floor((Date.now() - new Date(userRes.created_at)) / 86400000);
+
   return {
     name: repo.name,
-    description: repo.description || 'none',
+    description: repo.description || '',
     languages: languages || {},
-    totalCommits,
+    totalCommits: Array.isArray(commits) ? commits.length : 0,
     commitSpreadDays,
-    stars: fullRepo?.stargazers_count ?? repo.stargazers_count ?? 0,
-    forks: fullRepo?.forks_count ?? repo.forks_count ?? 0,
+    stars: repo.stargazers_count ?? 0,
+    forks: repo.forks_count ?? 0,
     isForked: repo.fork ?? false,
-    hasDeployment: !!(fullRepo?.homepage),
-    liveUrl: fullRepo?.homepage || null,
-    daysSinceLastCommit,
-    accountAgeDays: 0, // set by caller
-    commitMessages,
-    fileTree,
-    sampleCode: sampleCode.slice(0, 6000), // cap to ~6k chars
-    readme: (readme || 'No README found').slice(0, 3000),
+    hasDeployment: !!repo.homepage,
+    liveUrl: repo.homepage || null,
+    daysSinceLastCommit: Array.isArray(commits) && commits[0]
+      ? Math.floor((Date.now() - new Date(commits[0].commit.author.date)) / 86400000)
+      : 999,
+    accountAgeDays,
+    commitMessages: Array.isArray(commits)
+      ? commits.slice(0, 20).map(c => c.commit.message.split('\n')[0])
+      : [],
+    fileTree: tree.tree
+      ?.filter(f => f.type === 'blob')
+      .map(f => f.path)
+      .slice(0, 50)
+      .join('\n') || '',
+    sampleCode: sampleCode.slice(0, 3000),
+    readme,
   };
 }
 
@@ -265,18 +238,16 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
   }
 
-  const { token, repo, ownerLogin, accountAgeDays } = req.body;
+  const { token, repoName, githubUsername } = req.body;
 
-  if (!token || !repo || !ownerLogin) {
-    return res.status(400).json({ error: 'Missing required fields: token, repo, ownerLogin' });
+  if (!token || !repoName || !githubUsername) {
+    return res.status(400).json({ error: 'Missing required fields: token, repoName, githubUsername' });
   }
 
   try {
-    const enriched = await enrichRepo(token, repo, ownerLogin);
-    enriched.accountAgeDays = accountAgeDays || 0;
-
-    const analysis = await analyzeCodeQuality(enriched);
-    return res.status(200).json({ repo: repo.name, analysis });
+    const repoData = await collectRepoData(githubUsername, repoName, token);
+    const analysis = await analyzeCodeQuality(repoData);
+    return res.status(200).json({ repo: repoName, analysis });
   } catch (err) {
     console.error('[analyze-repo] Error:', err.message);
     return res.status(500).json({ error: err.message });
