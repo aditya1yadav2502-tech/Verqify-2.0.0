@@ -148,22 +148,50 @@ export default function ProofVerification() {
   const { user, profile } = useAuth();
   const [syncing, setSyncing] = useState(false);
   const [repoAudits, setRepoAudits] = useState(null);
-  const [profileData, setProfileData] = useState(null);
+  const [studentData, setStudentData] = useState(null);
+  const [verifiedSkills, setVerifiedSkills] = useState([]);
 
   useEffect(() => {
-    async function loadData() {
+    async function loadIdentity() {
       if (!user || !supabase) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('repo_audits, engineer_type, strongest_signal, all_skills')
+      
+      // 1. Fetch granular student identity
+      const { data: student } = await supabase
+        .from('students')
+        .select('*')
         .eq('id', user.id)
         .single();
-      if (data) {
-        setRepoAudits(data.repo_audits);
-        setProfileData(data);
+      
+      // 2. Fetch aggregated skills
+      const { data: skills } = await supabase
+        .from('skills')
+        .select('*')
+        .eq('student_id', user.id)
+        .order('status', { ascending: false });
+
+      if (student) {
+        setStudentData(student);
+        setRepoAudits(student.fingerprint_data?.repoAudits || null);
+      }
+      if (skills) setVerifiedSkills(skills);
+
+      // Fallback for transition period (checking profiles)
+      if (!student) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('repo_audits, engineer_type, strongest_signal')
+          .eq('id', user.id)
+          .single();
+        if (profile?.repo_audits) {
+          setRepoAudits(profile.repo_audits);
+          setStudentData({
+            engineer_type: profile.engineer_type,
+            strongest_signal: profile.strongest_signal
+          });
+        }
       }
     }
-    loadData();
+    loadIdentity();
   }, [user]);
 
   const handleForceSync = async () => {
@@ -198,28 +226,28 @@ export default function ProofVerification() {
       </header>
 
       {/* Engineering Identity */}
-      {profileData?.engineer_type && (
+      {studentData?.engineer_type && (
         <section style={{ marginBottom: '3rem' }}>
           <div className="glass" style={{ padding: '2rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 280 }}>
                 <div className="label" style={{ color: 'var(--accent-indigo)', marginBottom: '0.4rem' }}>Verified Engineering Identity</div>
                 <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '2rem', fontWeight: 800, margin: '0 0 1rem' }}>
-                  {profileData.engineer_type}
+                  {studentData.engineer_type}
                 </h2>
                 <div style={{ paddingLeft: '1rem', borderLeft: '3px solid var(--accent-indigo)', marginBottom: '1.5rem' }}>
                   <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
-                    "{profileData.strongest_signal}"
+                    "{studentData.strongest_signal}"
                   </p>
                 </div>
               </div>
 
-              {profileData.all_skills && (
+              {verifiedSkills.length > 0 && (
                 <div style={{ flex: 1, minWidth: 280 }}>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1rem' }}>Aggregated Skill Proofs</h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {profileData.all_skills.slice(0, 12).map((skill, i) => (
-                      <div key={i} title={skill.proofs?.join(' | ')} style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--border)', fontSize: '0.78rem', fontWeight: 600 }}>
+                    {verifiedSkills.slice(0, 12).map((skill, i) => (
+                      <div key={i} style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--border)', fontSize: '0.78rem', fontWeight: 600 }}>
                         {skill.name}
                         <span style={{ marginLeft: '0.4rem', color: skill.status === 'verified' ? '#22c55e' : '#eab308', fontSize: '0.65rem' }}>
                           ● {skill.status}

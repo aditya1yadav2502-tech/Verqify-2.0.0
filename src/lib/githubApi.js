@@ -169,29 +169,35 @@ export async function syncGitHubData() {
     const ghProfile = await fetchGithubProfile(token);
     const githubUsername = ghProfile.login;
 
-    // Try the unified deep engine first
-    let result;
-    try {
-      result = await callAnalyzeAll(token, githubUsername);
-    } catch (deepErr) {
-      console.warn('Deep analysis failed, falling back to legacy engine:', deepErr.message);
-      const legacy = await generateSkillFingerprint(token);
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          skill_fingerprint: legacy.radarData,
-          ai_personality: legacy.aiInfo.personality,
-          dimension_scores: legacy.aiInfo.dimensions,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', session.user.id);
-      if (error) throw error;
-      return legacy.radarData;
+    // 1. Ensure student record exists with current tokens
+    // This allows the background API to fetch data
+    await supabase
+      .from('students')
+      .upsert({
+        id: session.user.id,
+        github_username: githubUsername,
+        github_access_token: token,
+        updated_at: new Date().toISOString(),
+      });
+
+    // 2. Call the new generation endpoint
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    const response = await fetch(`${base}/api/fingerprint/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: session.user.id }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(err.error || 'Fingerprint generation failed');
     }
 
-    const { radarData } = mapToFingerprint(result);
+    const { result } = await response.json();
 
-    const { error } = await supabase
+    // 3. Keep profiles table in sync for general UI (legacy compatibility)
+    const { radarData } = mapToFingerprint(result);
+    await supabase
       .from('profiles')
       .update({
         skill_fingerprint: radarData,
@@ -209,7 +215,6 @@ export async function syncGitHubData() {
       })
       .eq('id', session.user.id);
 
-    if (error) throw error;
     return radarData;
   } catch (err) {
     console.error('Sync failed:', err);
