@@ -11,7 +11,7 @@ export default function SavedCandidates() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('saved_candidates')
       .select(`
         id,

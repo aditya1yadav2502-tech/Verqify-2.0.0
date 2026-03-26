@@ -49,7 +49,7 @@ export async function generateSkillFingerprint(providerToken) {
     if (providerToken && providerToken !== 'demo_token') {
       repos = await fetchGithubRepos(providerToken);
     }
-  } catch (err) {
+  } catch {
     console.warn('GitHub API failed, falling back to heuristic data');
   }
 
@@ -73,7 +73,7 @@ export async function generateSkillFingerprint(providerToken) {
       for (const [lang, bytes] of Object.entries(langs)) {
         languageBytes[lang] = (languageBytes[lang] || 0) + bytes;
       }
-    } catch (e) { continue; }
+    } catch { continue; }
   }
 
   const capabilityMap = {

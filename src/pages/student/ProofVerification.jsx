@@ -20,7 +20,7 @@ export default function ProofVerification() {
       } else {
         toast.error('Sync failed. Ensure GitHub is connected.', { id });
       }
-    } catch (err) {
+    } catch {
       toast.error('Error during sync', { id });
     } finally {
       setSyncing(false);

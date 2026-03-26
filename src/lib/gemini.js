@@ -1,11 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const env = (typeof import.meta !== 'undefined' && import.meta.env) || process.env || {};
+const getEnv = () => {
+  try {
+    return import.meta.env;
+  } catch {
+    return {};
+  }
+};
+
+const env = getEnv();
 const genAI = new GoogleGenerativeAI(env.VITE_GEMINI_API_KEY);
 
 export async function analyzeEngineeringIdentity(repos) {
-  const env = (typeof import.meta !== 'undefined' && import.meta.env) || process.env || {};
-  if (!env.VITE_GEMINI_API_KEY) {
+  const currentEnv = getEnv();
+  if (!currentEnv.VITE_GEMINI_API_KEY) {
     console.warn("Gemini API key missing. Using fallback analysis.");
     return {
       personality: "An architecturally-minded engineer with a focus on scalable backend systems and robust DevOps practices.",

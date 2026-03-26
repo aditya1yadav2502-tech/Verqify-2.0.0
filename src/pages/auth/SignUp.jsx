@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../../lib/supabaseClient';
 
-const authRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
-
 export default function SignUp() {
-  const [step, setStep] = React.useState(1); // 1: details, 2: OTP
   const [form, setForm] = React.useState({
     collegeEmail: '',
     password: '',
