@@ -47,6 +47,39 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS engineer_type TEXT,  -- AI-categorized engineering role
   ADD COLUMN IF NOT EXISTS strongest_signal TEXT; -- The single most impressive thing detected
 
+-- Verified Skills table for cross-repo aggregation
+CREATE TABLE IF NOT EXISTS public.skills (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'claimed', -- claimed, demonstrated, verified
+  repo_count INTEGER DEFAULT 1,
+  evidence_strength TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Students table (extended profile for granular identity)
+CREATE TABLE IF NOT EXISTS public.students (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  github_username TEXT,
+  github_access_token TEXT, -- Optional: store encrypted or if needed for background jobs
+  fingerprint_data JSONB,   -- Stores the full analyzeAllRepos result
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can view all skills." ON public.skills FOR SELECT USING (true);
+CREATE POLICY "Users can manage their own skills." ON public.skills
+  FOR ALL USING (auth.uid() = student_id);
+
+CREATE POLICY "Users can view student profiles." ON public.students FOR SELECT USING (true);
+CREATE POLICY "Users can update their own student profile." ON public.students
+  FOR UPDATE USING (auth.uid() = id);
+
 CREATE POLICY "Users can insert their own profile." ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
