@@ -107,14 +107,15 @@ export default function StudentProfile() {
 
       {/* Verified Skill Map */}
       <section className="animate-fade-in-up delay-200" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '4rem', marginBottom: '4rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '2.5rem', fontFamily: 'var(--font-serif)', fontWeight: '400', margin: 0 }}>Verified Skill Map</h2>
-          <span className="text-secondary" style={{ fontSize: '0.875rem' }}>Live Production Data</span>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          {profileSkills.filter(s => s.score > 20).map(skill => (
-            <SkillTag key={skill.name} name={skill.name} status="verified" />
-          ))}
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '2rem', fontFamily: 'var(--font-head)', fontWeight: '600' }}>Verified Skill Map</h2>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {profileSkills.filter(s => s.score > 20).length > 0 ? (
+            profileSkills.filter(s => s.score > 20).map(skill => (
+              <SkillTag key={skill.name} name={skill.name} status="verified" />
+            ))
+          ) : (
+            <p className="text-secondary" style={{ fontSize: '0.9rem' }}>No high-density skills detected yet. Sync more repositories to build your map.</p>
+          )}
         </div>
       </section>
 

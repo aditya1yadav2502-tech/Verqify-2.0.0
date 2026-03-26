@@ -1,8 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function VisibilitySettings() {
-  const [discoverable, setDiscoverable] = React.useState(true);
+  const { user, profile } = useAuth();
+  const [discoverable, setDiscoverable] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setDiscoverable(profile.is_discoverable ?? true);
+    }
+  }, [profile]);
+
+  const handleToggle = async () => {
+    if (!user) return;
+    setLoading(true);
+    const newValue = !discoverable;
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_discoverable: newValue })
+      .eq('id', user.id);
+
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setDiscoverable(newValue);
+      toast.success(`Discoverability turned ${newValue ? 'ON' : 'OFF'}`);
+    }
+  };
+
+  const profileUrl = `${window.location.origin}/s/${profile?.username || 'me'}`;
 
   return (
     <div style={{ maxWidth: 960 }}>
@@ -21,20 +52,19 @@ export default function VisibilitySettings() {
             </p>
           </div>
           <button 
-            onClick={() => {
-              setDiscoverable(!discoverable);
-              toast.success(`Discoverability turned ${!discoverable ? 'ON' : 'OFF'}`);
-            }}
+            disabled={loading}
+            onClick={handleToggle}
             style={{ 
               width: 52, height: 32, borderRadius: 20, border: 'none', cursor: 'pointer',
               background: discoverable ? 'var(--accent-indigo)' : 'var(--border)',
-              position: 'relative', transition: '0.3s'
+              position: 'relative', transition: '0.3s',
+              opacity: loading ? 0.6 : 1
             }}
           >
             <div style={{ 
               width: 24, height: 24, borderRadius: '50%', background: 'white',
               position: 'absolute', top: 4, left: discoverable ? 24 : 4,
-              transition: '0.3s shadow', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              transition: '0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }} />
           </button>
         </div>
@@ -49,13 +79,13 @@ export default function VisibilitySettings() {
           <input 
             type="text" 
             readOnly 
-            value="verqify.com/s/aditya" 
+            value={profileUrl} 
             className="input"
             style={{ flex: 1, background: 'var(--bg-elevated)', fontFamily: 'monospace', fontSize: '0.9rem' }} 
           />
           <button 
             onClick={() => {
-              navigator.clipboard.writeText('verqify.com/s/aditya');
+              navigator.clipboard.writeText(profileUrl);
               toast.success('Link copied to clipboard!');
             }}
             className="btn btn-secondary" 
@@ -68,3 +98,4 @@ export default function VisibilitySettings() {
     </div>
   );
 }
+

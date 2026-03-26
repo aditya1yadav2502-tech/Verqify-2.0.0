@@ -1,7 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SkillTag from '../../components/SkillTag';
+import { useAuth } from '../../contexts/AuthContext';
+import { syncGitHubData } from '../../lib/githubApi';
+import { toast } from 'sonner';
 
 export default function ProofVerification() {
+  const { user, profile } = useAuth();
+  const [syncing, setSyncing] = useState(false);
+
+  const handleForceSync = async () => {
+    setSyncing(true);
+    const id = toast.loading('Re-syncing with GitHub...');
+    try {
+      const result = await syncGitHubData();
+      if (result) {
+        toast.success('Engineering shape updated', { id });
+        // Small delay to allow DB to propagate before refresh
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast.error('Sync failed. Ensure GitHub is connected.', { id });
+      }
+    } catch (err) {
+      toast.error('Error during sync', { id });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const skills = profile?.skill_fingerprint || [];
+
   return (
     <div style={{ maxWidth: 960 }}>
       <header style={{ marginBottom: '3.5rem' }}>
@@ -19,12 +46,21 @@ export default function ProofVerification() {
             </div>
             <div>
               <h4 style={{ fontFamily: 'var(--font-head)', margin: '0 0 0.25rem 0', fontWeight: 600 }}>GitHub</h4>
-              <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.9rem' }}>Synced to your engineering shape</p>
+              <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.9rem' }}>
+                {user?.app_metadata?.provider === 'github' ? 'Account Linked' : 'Connected via OAuth'}
+              </p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span className="badge badge-indigo" style={{ fontSize: '0.7rem' }}>CONNECTED</span>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Force Sync</button>
+            <button 
+              onClick={handleForceSync}
+              disabled={syncing}
+              className="btn btn-secondary" 
+              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            >
+              {syncing ? 'Syncing...' : 'Force Sync'}
+            </button>
           </div>
         </div>
       </section>
@@ -37,20 +73,25 @@ export default function ProofVerification() {
               <tr>
                 <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Skill</th>
                 <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Status</th>
-                <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Source count</th>
+                <th style={{ padding: '1.25rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Analysis</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '1.25rem' }}><SkillTag name="Node.js" status="verified" /></td>
-                <td style={{ padding: '1.25rem' }}><span className="badge badge-indigo" style={{ fontSize: '0.75rem' }}>VERIFIED</span></td>
-                <td style={{ padding: '1.25rem', fontSize: '0.9rem' }}>4 repositories</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '1.25rem' }}><SkillTag name="React" status="claimed" /></td>
-                <td style={{ padding: '1.25rem' }}><span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-muted)' }}>CLAIMED</span></td>
-                <td style={{ padding: '1.25rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>0 (Requires Sync)</td>
-              </tr>
+              {skills.length > 0 ? (
+                skills.map(skill => (
+                  <tr key={skill.name} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '1.25rem' }}><SkillTag name={skill.name} status="verified" /></td>
+                    <td style={{ padding: '1.25rem' }}><span className="badge badge-indigo" style={{ fontSize: '0.75rem' }}>VERIFIED</span></td>
+                    <td style={{ padding: '1.25rem', fontSize: '0.9rem' }}>Verified via GitHub repos</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    No verified skills detected. Click 'Force Sync' above.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -58,3 +99,4 @@ export default function ProofVerification() {
     </div>
   );
 }
+
