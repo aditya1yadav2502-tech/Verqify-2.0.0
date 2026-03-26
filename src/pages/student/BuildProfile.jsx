@@ -15,11 +15,13 @@ export default function BuildProfile() {
 
   useEffect(() => {
     if (authProfile) {
-      setProfile({
-        full_name: authProfile.full_name || '',
-        college: authProfile.college || '',
-        branch: authProfile.branch || 'CSE',
-        year_of_study: authProfile.year_of_study || '1st'
+      Promise.resolve().then(() => {
+        setProfile({
+          full_name: authProfile.full_name || '',
+          college: authProfile.college || '',
+          branch: authProfile.branch || 'CSE',
+          year_of_study: authProfile.year_of_study || '1st'
+        });
       });
     }
   }, [authProfile]);
