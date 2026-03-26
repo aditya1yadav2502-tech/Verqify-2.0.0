@@ -42,136 +42,46 @@ export async function fetchRepoLanguages(providerToken, languagesUrl) {
 // ─── Deep Analysis Engine ────────────────────────────────────────────────────
 
 /**
- * Calls the server-side Vercel API route to deep-analyse a single repo.
- * The route handles GitHub data enrichment + Gemini 1.5 Pro audit.
+ * Single API call to /api/analyze-all — the server handles all repos,
+ * parallel Gemini analysis, skill aggregation, and personality synthesis.
  */
-async function analyzeRepo(token, repo, ownerLogin, accountAgeDays) {
-  const base =
-    typeof window !== 'undefined'
-      ? window.location.origin
-      : 'https://verqify-2-0-0.vercel.app';
+export async function callAnalyzeAll(token, githubUsername) {
+  const base = typeof window !== 'undefined'
+    ? window.location.origin
+    : 'https://verqify-2-0-0.vercel.app';
 
-  const res = await fetch(`${base}/api/analyze-repo`, {
+  const res = await fetch(`${base}/api/analyze-all`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, repoName: repo.name, githubUsername: ownerLogin }),
+    body: JSON.stringify({ token, githubUsername }),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(`API error for ${repo.name}: ${err.error}`);
+    throw new Error(`Analysis API error: ${err.error}`);
   }
   return res.json();
+  // Returns: { skills, dimensions, personality, reposAnalyzed,
+  //            overallVerificationLevel, redFlags, standoutSignals, repoAudits }
 }
 
 /**
- * Analyses the top N repos through the deep audit engine and aggregates
- * results into the fingerprint + AI personality format Supabase expects.
+ * Maps the /api/analyze-all result into the Supabase fingerprint format.
+ * dimensions: { impact, depth, consistency, breadth, ships } (0-100 each)
+ * radarData: 5-point array for the existing radar chart component.
  */
-export async function analyzeRepoBatch(providerToken, repos, ownerLogin, accountAgeDays) {
-  // Pick top 5 non-fork repos sorted by most recently updated
-  const targets = repos
-    .filter((r) => !r.fork)
-    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-    .slice(0, 5);
-
-  if (targets.length === 0) return null;
-
-  console.log(`Verqify Engine: Deep-analysing ${targets.length} repositories via Gemini 1.5 Pro...`);
-
-  // Analyse sequentially to avoid rate-limiting Gemini
-  const results = [];
-  for (const repo of targets) {
-    try {
-      const result = await analyzeRepo(providerToken, repo, ownerLogin, accountAgeDays);
-      results.push(result);
-      console.log(`  ✓ ${repo.name} — ${result.analysis?.overall_verdict?.verification_level}`);
-    } catch (err) {
-      console.warn(`  ✗ Skipped ${repo.name}: ${err.message}`);
-    }
-  }
-
-  if (results.length === 0) return null;
-
-  // ── Aggregate skill scores from per-repo skill_detected arrays ──
-  const skillScores = {};
-  const skillCounts = {};
-
-  // Map detected skill names to our 5 radar categories
-  const categoryMap = {
-    Frontend: ['frontend', 'react', 'vue', 'angular', 'css', 'html', 'javascript', 'typescript', 'ui'],
-    Backend: ['backend', 'api', 'server', 'node', 'python', 'go', 'java', 'rust', 'express', 'django', 'flask'],
-    Database: ['database', 'sql', 'postgres', 'mysql', 'mongodb', 'supabase', 'orm'],
-    DevOps: ['devops', 'docker', 'ci', 'cd', 'kubernetes', 'terraform', 'shell', 'deployment', 'nginx'],
-    Architecture: ['architecture', 'system design', 'scalable', 'microservice', 'distributed'],
-  };
-
-  const strengthWeight = { weak: 20, moderate: 60, strong: 100 };
-
-  for (const { analysis } of results) {
-    if (!Array.isArray(analysis?.skills_detected)) continue;
-    for (const skill of analysis.skills_detected) {
-      const name = (skill.name || '').toLowerCase();
-      const weight = strengthWeight[skill.evidence_strength] ?? 40;
-      for (const [category, keywords] of Object.entries(categoryMap)) {
-        if (keywords.some((kw) => name.includes(kw))) {
-          skillScores[category] = (skillScores[category] || 0) + weight;
-          skillCounts[category] = (skillCounts[category] || 0) + 1;
-        }
-      }
-    }
-  }
-
-  const maxScore = Math.max(...Object.values(skillScores), 1);
+function mapToFingerprint(result) {
+  const { dimensions } = result;
   const radarData = [
-    { name: 'Architecture', score: Math.round(((skillScores.Architecture || 0) / maxScore) * 100) || 30 },
-    { name: 'Backend', score: Math.round(((skillScores.Backend || 0) / maxScore) * 100) || 25 },
-    { name: 'Frontend', score: Math.round(((skillScores.Frontend || 0) / maxScore) * 100) || 25 },
-    { name: 'DevOps', score: Math.round(((skillScores.DevOps || 0) / maxScore) * 100) || 15 },
-    { name: 'Database', score: Math.round(((skillScores.Database || 0) / maxScore) * 100) || 15 },
+    { name: 'Impact',       score: dimensions.impact       ?? 50 },
+    { name: 'Depth',        score: dimensions.depth        ?? 50 },
+    { name: 'Consistency',  score: dimensions.consistency  ?? 50 },
+    { name: 'Breadth',      score: dimensions.breadth      ?? 50 },
+    { name: 'Ships',        score: dimensions.ships        ?? 50 },
   ];
-
-  // ── Aggregate AI personality from the best verified repo ──
-  const best = results
-    .filter((r) => r.analysis?.overall_verdict)
-    .sort((a, b) => {
-      const levels = ['none', 'low', 'moderate', 'high', 'exceptional'];
-      return (
-        levels.indexOf(b.analysis.overall_verdict.verification_level) -
-        levels.indexOf(a.analysis.overall_verdict.verification_level)
-      );
-    })[0];
-
-  const personality = best?.analysis?.overall_verdict?.summary || 
-    'An engineering candidate with a diverse technical background as verified by Gemini AI analysis.';
-
-  // Aggregate dimension scores across repos
-  const dims = { Velocity: 0, Quality: 0, Collaboration: 0, Complexity: 0, Innovation: 0 };
-  let dimCount = 0;
-  for (const { analysis } of results) {
-    if (!analysis) continue;
-    const cq = analysis.code_quality?.score || 0;
-    const ud = analysis.understanding_depth?.score || 0;
-    const cm = analysis.commit_quality?.score || 0;
-    const rw = analysis.real_world_readiness?.score || 0;
-    dims.Quality += cq;
-    dims.Complexity += ud;
-    dims.Velocity += cm;
-    dims.Innovation += (cq + ud) / 2;
-    dims.Collaboration += rw;
-    dimCount++;
-  }
-
-  const dimensions = dimCount > 0
-    ? Object.fromEntries(Object.entries(dims).map(([k, v]) => [k, Math.round(v / dimCount)]))
-    : { Velocity: 70, Quality: 70, Collaboration: 70, Complexity: 70, Innovation: 70 };
-
-  return {
-    radarData,
-    aiInfo: { personality, dimensions },
-    repoAudits: results, // full per-repo breakdown for the UI
-  };
+  return { radarData };
 }
+
 
 // ─── Legacy fingerprint (kept for fallback / demo) ───────────────────────────
 
@@ -256,34 +166,43 @@ export async function syncGitHubData() {
   }
 
   try {
-    const repos = await fetchGithubRepos(token);
-    const profile = await fetchGithubProfile(token);
+    const ghProfile = await fetchGithubProfile(token);
+    const githubUsername = ghProfile.login;
 
-    const ownerLogin = profile.login;
-    const accountAgeDays = Math.round(
-      (Date.now() - new Date(profile.created_at)) / 86400000
-    );
-
-    // Try deep engine first, fall back to legacy on failure
-    let fingerprint;
+    // Try the unified deep engine first
+    let result;
     try {
-      fingerprint = await analyzeRepoBatch(token, repos, ownerLogin, accountAgeDays);
+      result = await callAnalyzeAll(token, githubUsername);
     } catch (deepErr) {
       console.warn('Deep analysis failed, falling back to legacy engine:', deepErr.message);
-      fingerprint = await generateSkillFingerprint(token);
+      const legacy = await generateSkillFingerprint(token);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          skill_fingerprint: legacy.radarData,
+          ai_personality: legacy.aiInfo.personality,
+          dimension_scores: legacy.aiInfo.dimensions,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.user.id);
+      if (error) throw error;
+      return legacy.radarData;
     }
 
-    if (!fingerprint) return null;
-
-    const { radarData, aiInfo, repoAudits } = fingerprint;
+    const { radarData } = mapToFingerprint(result);
 
     const { error } = await supabase
       .from('profiles')
       .update({
         skill_fingerprint: radarData,
-        ai_personality: aiInfo.personality,
-        dimension_scores: aiInfo.dimensions,
-        repo_audits: repoAudits ?? null,
+        ai_personality: result.personality,
+        dimension_scores: {
+          ...result.dimensions,
+          overallVerificationLevel: result.overallVerificationLevel,
+          reposAnalyzed: result.reposAnalyzed,
+        },
+        repo_audits: result.repoAudits ?? null,
+        all_skills: result.skills ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', session.user.id);
