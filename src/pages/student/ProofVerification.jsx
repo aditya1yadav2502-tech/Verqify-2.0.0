@@ -298,8 +298,14 @@ export default function ProofVerification() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Analysis failed (may be rate limited)' }));
-        throw new Error(err.error || 'Fingerprint generation failed');
+        let errStr = 'Fingerprint generation failed';
+        try {
+          const errData = await response.json();
+          errStr = errData.error || errStr;
+        } catch (e) {
+          errStr = `Server responded with ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errStr);
       }
 
       toast.success('Audit complete — identity updated!', { id: tid });
@@ -313,6 +319,7 @@ export default function ProofVerification() {
   };
 
   const hasAudits = Array.isArray(repoAudits) && repoAudits.length > 0;
+
 
   return (
     <div style={{ maxWidth: 980 }}>
