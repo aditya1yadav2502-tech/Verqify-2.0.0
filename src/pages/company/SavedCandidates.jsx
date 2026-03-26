@@ -30,7 +30,10 @@ export default function SavedCandidates() {
   }
 
   useEffect(() => {
-    fetchSaved();
+    const init = async () => {
+      await fetchSaved();
+    };
+    init();
   }, []);
 
   const handleRemove = async (id) => {

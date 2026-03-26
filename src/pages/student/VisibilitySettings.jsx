@@ -10,7 +10,9 @@ export default function VisibilitySettings() {
 
   useEffect(() => {
     if (profile) {
-      setDiscoverable(profile.is_discoverable ?? true);
+      Promise.resolve().then(() => {
+        setDiscoverable(profile.is_discoverable ?? true);
+      });
     }
   }, [profile]);
 
