@@ -77,6 +77,10 @@ CREATE POLICY "Users can manage their own skills." ON public.skills
   FOR ALL USING (auth.uid() = student_id);
 
 CREATE POLICY "Users can view student profiles." ON public.students FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert their own student profile." ON public.students
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Users can update their own student profile." ON public.students
   FOR UPDATE USING (auth.uid() = id);
 

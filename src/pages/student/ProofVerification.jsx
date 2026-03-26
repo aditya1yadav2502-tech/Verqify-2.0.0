@@ -196,17 +196,50 @@ export default function ProofVerification() {
 
   const handleForceSync = async () => {
     setSyncing(true);
-    const id = toast.loading('Gemini 1.5 Pro is deep-auditing your repositories...');
+    const tid = toast.loading('Gemini 1.5 Pro is deep-auditing your repositories...');
     try {
-      const result = await syncGitHubData();
-      if (result) {
-        toast.success('Repository audit complete — profile updated!', { id });
-        setTimeout(() => window.location.reload(), 1200);
-      } else {
-        toast.error('Sync failed. Ensure GitHub is connected and try again.', { id });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.provider_token;
+
+      if (!token) {
+        throw new Error('No GitHub token found in session. Please log in with GitHub.');
       }
-    } catch {
-      toast.error('Error during sync. Check console for details.', { id });
+
+      // Fetch profile to get username
+      const ghRes = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const ghProfile = await ghRes.json();
+
+      // Ensure student record exists for the API to read
+      const { error: upsertErr } = await supabase
+        .from('students')
+        .upsert({
+          id: user.id,
+          github_username: ghProfile.login,
+          github_access_token: token,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (upsertErr) throw new Error(`Failed to sync credentials: ${upsertErr.message}`);
+
+      // Now trigger the generation API
+      const response = await fetch('/api/fingerprint/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: user.id }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Unknown server error' }));
+        throw new Error(err.error || 'Fingerprint generation failed');
+      }
+
+      toast.success('Repository audit complete — identity updated!', { id: tid });
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err) {
+      console.error('Handled Sync Error:', err);
+      toast.error(err.message || 'Error during sync.', { id: tid });
     } finally {
       setSyncing(false);
     }
