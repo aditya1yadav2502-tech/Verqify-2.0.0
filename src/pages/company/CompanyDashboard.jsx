@@ -1,3 +1,8 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabaseClient';
+import { toast } from 'sonner';
+import SkillFingerprint from '../../components/SkillFingerprint';
+
 async function saveCandidate(studentId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return toast.error('Please log in.');
@@ -39,6 +44,7 @@ function CandidateCard({ studentId, username, headline, fingerprint }) {
     </div>
   );
 }
+
 
 export default function CompanyDashboard() {
   const [candidates, setCandidates] = useState([]);

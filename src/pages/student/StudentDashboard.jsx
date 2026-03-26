@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabaseClient';
 
 function StatCard({ num, label, trend }) {
   return (

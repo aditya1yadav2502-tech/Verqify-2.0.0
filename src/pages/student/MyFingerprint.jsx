@@ -10,26 +10,6 @@ export default function MyFingerprint() {
   const [loading, setLoading] = useState(false);
   const [fingerprint, setFingerprint] = useState(null);
 
-  useEffect(() => {
-    async function init() {
-      if (!user || !supabase) return;
-      
-      // 1. Fetch existing fingerprint
-      const { data } = await supabase
-        .from('profiles')
-        .select('skill_fingerprint')
-        .eq('id', user.id)
-        .single();
-      
-      if (data?.skill_fingerprint) {
-        setFingerprint(data.skill_fingerprint);
-      } else if (session?.provider_token) {
-        handleSync();
-      }
-    }
-    init();
-  }, [user, session]);
-
   const handleSync = async () => {
     if (!supabase || !user) {
       toast.error('Supabase not configured.');
@@ -67,6 +47,27 @@ export default function MyFingerprint() {
       finally: () => setLoading(false)
     });
   };
+
+  useEffect(() => {
+    async function init() {
+      if (!user || !supabase) return;
+      
+      // 1. Fetch existing fingerprint
+      const { data } = await supabase
+        .from('profiles')
+        .select('skill_fingerprint')
+        .eq('id', user.id)
+        .single();
+      
+      if (data?.skill_fingerprint) {
+        setFingerprint(data.skill_fingerprint);
+      } else if (session?.provider_token) {
+        handleSync();
+      }
+    }
+    init();
+  }, [user, session]);
+
 
   const { profile } = useAuth();
 
