@@ -12,7 +12,7 @@ export default function MyFingerprint() {
 
   useEffect(() => {
     async function fetchFingerprint() {
-      if (!user) return;
+      if (!user || !supabase) return;
       const { data } = await supabase
         .from('profiles')
         .select('skill_fingerprint')
@@ -27,6 +27,11 @@ export default function MyFingerprint() {
   }, [user]);
 
   const handleSync = async () => {
+    if (!supabase || !user) {
+      toast.error('Supabase not configured.');
+      return;
+    }
+
     if (!session?.provider_token) {
       toast.error('GitHub not connected. Redirecting to link your account...');
       // In a real app, we'd trigger OAuth here to link the account

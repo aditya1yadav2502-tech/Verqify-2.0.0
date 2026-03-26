@@ -28,11 +28,15 @@ import MyFingerprint from './pages/student/MyFingerprint';
 import ProofVerification from './pages/student/ProofVerification';
 import VisibilitySettings from './pages/student/VisibilitySettings';
 import Analytics from './pages/student/Analytics';
+import Onboarding from './pages/student/Onboarding';
 
 /* Company Pages */
 import CompanyDashboard from './pages/company/CompanyDashboard';
 import SavedCandidates from './pages/company/SavedCandidates';
 import Messages from './pages/company/Messages';
+
+/* Guards */
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -59,21 +63,26 @@ function App() {
           <Route path="/company/login" element={<CompanyLogin />} />
         </Route>
 
-        {/* Student Dashboard Routes */}
-        <Route element={<StudentLayout />}>
-          <Route path="/dashboard" element={<StudentDashboard />} />
-          <Route path="/dashboard/profile" element={<BuildProfile />} />
-          <Route path="/dashboard/fingerprint" element={<MyFingerprint />} />
-          <Route path="/dashboard/proof" element={<ProofVerification />} />
-          <Route path="/dashboard/settings" element={<VisibilitySettings />} />
-          <Route path="/dashboard/analytics" element={<Analytics />} />
-        </Route>
+        {/* Onboarding Route */}
+        <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Company Dashboard Routes */}
-        <Route element={<CompanyLayout />}>
-          <Route path="/company/dashboard" element={<CompanyDashboard />} />
-          <Route path="/company/saved" element={<SavedCandidates />} />
-          <Route path="/company/messages" element={<Messages />} />
+        {/* Protected Student Dashboard Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<StudentLayout />}>
+            <Route path="/dashboard" element={<StudentDashboard />} />
+            <Route path="/dashboard/profile" element={<BuildProfile />} />
+            <Route path="/dashboard/fingerprint" element={<MyFingerprint />} />
+            <Route path="/dashboard/proof" element={<ProofVerification />} />
+            <Route path="/dashboard/settings" element={<VisibilitySettings />} />
+            <Route path="/dashboard/analytics" element={<Analytics />} />
+          </Route>
+
+          {/* Protected Company Dashboard Routes */}
+          <Route element={<CompanyLayout />}>
+            <Route path="/company/dashboard" element={<CompanyDashboard />} />
+            <Route path="/company/saved" element={<SavedCandidates />} />
+            <Route path="/company/messages" element={<Messages />} />
+          </Route>
         </Route>
       </Routes>
     </>

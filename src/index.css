@@ -75,15 +75,15 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .glass {
   background: rgba(255,255,255,0.7);
   border: 1px solid var(--border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-radius: var(--radius-lg);
   transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
 .glass:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 16px 48px rgba(99,102,241,0.08), 0 4px 12px rgba(0,0,0,0.04);
-  transform: translateY(-3px);
+  box-shadow: 0 24px 60px rgba(99,102,241,0.12), 0 8px 16px rgba(0,0,0,0.04);
+  transform: translateY(-2px);
 }
 
 /* ─── Buttons ─── */
@@ -156,6 +156,15 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .accent-line { width: 40px; height: 3px; border-radius: 999px; background: var(--accent-indigo); margin-bottom: 1.5rem; }
 .glow-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); display: inline-block; }
 .label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+
+.mesh-gradient {
+  background-color: #FAFBFF;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, hsla(253,16%,7%,0) 50%, hsla(253,16%,7%,0.02) 100%),
+    radial-gradient(at 100% 0%, hsla(225,39%,30%,0.03) 0, hsla(225,39%,30%,0) 50%, hsla(225,39%,30%,0) 100%),
+    radial-gradient(at 100% 100%, hsla(339,49%,30%,0.02) 0, hsla(339,49%,30%,0) 50%, hsla(339,49%,30%,0) 100%),
+    radial-gradient(at 0% 100%, hsla(193,79%,30%,0.04) 0, hsla(193,79%,30%,0) 50%, hsla(193,79%,30%,0) 100%);
+}
 
 /* ─── Animations ─── */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }

@@ -4,57 +4,53 @@ import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function BuildProfile() {
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
   const [profile, setProfile] = useState({
     full_name: '',
     college: '',
-    github_url: '',
-    live_url: ''
+    branch: 'CSE',
+    year_of_study: '1st'
   });
-  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    async function loadProfile() {
-      if (!user || !supabase) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (data) {
-        setProfile({
-          full_name: data.full_name || '',
-          college: data.college || '',
-          github_url: data.github_url || '',
-          live_url: data.live_url || ''
-        });
-      }
-      setLoading(false);
+    if (authProfile) {
+      setProfile({
+        full_name: authProfile.full_name || '',
+        college: authProfile.college || '',
+        branch: authProfile.branch || 'CSE',
+        year_of_study: authProfile.year_of_study || '1st'
+      });
     }
-    loadProfile();
-  }, [user]);
+  }, [authProfile]);
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!supabase) return;
+    if (!supabase || !user) return;
+    setSaving(true);
 
     const { error } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
-        ...profile,
-        updated_at: new Error().toISOString() // shorthand for now()
+        full_name: profile.full_name,
+        college: profile.college,
+        branch: profile.branch,
+        year_of_study: profile.year_of_study,
+        updated_at: new Date().toISOString()
       });
+    setSaving(false);
 
-    if (error) {
+      if (error) {
       toast.error(error.message);
     } else {
       toast.success('Professional identity updated');
+      // Refresh to update AuthContext profile
+      setTimeout(() => window.location.reload(), 1000);
     }
   };
 
-  if (loading && user) return <div className="container" style={{ paddingTop:'8rem' }}>Loading identity...</div>;
+  if (!user) return <div className="container" style={{ paddingTop:'8rem' }}>Please log in...</div>;
 
   return (
     <div style={{ maxWidth: 960 }}>
@@ -67,41 +63,70 @@ export default function BuildProfile() {
       <div className="glass" style={{ padding: '3rem', marginBottom: '3rem' }}>
         <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 600, marginBottom: '2rem' }}>Core Identity</h2>
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>First Name</label>
-              <input type="text" defaultValue="Aditya" className="input" style={{ width: '100%' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>Last Name</label>
-              <input type="text" defaultValue="Yadav" className="input" style={{ width: '100%' }} />
-            </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>Full Name</label>
+            <input
+              type="text"
+              className="input"
+              style={{ width: '100%' }}
+              value={profile.full_name}
+              onChange={(e) => setProfile((prev) => ({ ...prev, full_name: e.target.value }))}
+              required
+            />
           </div>
+
           <div>
             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>College / University</label>
-            <input type="text" defaultValue="Indian Institute of Technology" className="input" style={{ width: '100%' }} />
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.6rem' }}>Used to verify your student status and anchor your academic proof.</p>
+            <input
+              type="text"
+              className="input"
+              style={{ width: '100%' }}
+              value={profile.college}
+              onChange={(e) => setProfile((prev) => ({ ...prev, college: e.target.value }))}
+              required
+            />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.85rem 2.5rem' }}>Update Profile</button>
-        </form>
-      </div>
 
-      <div className="glass" style={{ padding: '3rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Independent Artifacts</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Connect specific high-impact work that falls outside your primary GitHub sync.</p>
-        
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>GitHub Repository URL</label>
-            <input type="url" placeholder="https://github.com/..." className="input" style={{ width: '100%' }} />
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.6rem' }}>Our engine scans commit SHA and dependency graph to verify your contribution grade.</p>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+              Branch
+            </label>
+            <select
+              className="input"
+              style={{ width: '100%' }}
+              value={profile.branch}
+              onChange={(e) => setProfile((prev) => ({ ...prev, branch: e.target.value }))}
+            >
+              <option value="CSE">CSE</option>
+              <option value="ECE">ECE</option>
+              <option value="IT">IT</option>
+              <option value="ME">ME</option>
+              <option value="CE">CE</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
+
           <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>Live URL (Optional)</label>
-            <input type="url" placeholder="https://..." className="input" style={{ width: '100%' }} />
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.6rem' }}>Proves you can ship production-ready products, not just code.</p>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+              Year of study
+            </label>
+            <select
+              className="input"
+              style={{ width: '100%' }}
+              value={profile.year_of_study}
+              onChange={(e) => setProfile((prev) => ({ ...prev, year_of_study: e.target.value }))}
+            >
+              <option value="1st">1st</option>
+              <option value="2nd">2nd</option>
+              <option value="3rd">3rd</option>
+              <option value="4th">4th</option>
+              <option value="Alumni">Alumni</option>
+            </select>
           </div>
-          <button type="button" className="btn btn-secondary" style={{ alignSelf: 'flex-start', padding: '0.85rem 2rem' }}>Connect Proof</button>
+
+          <button type="submit" disabled={saving} className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.85rem 2.5rem' }}>
+            {saving ? 'Saving...' : 'Update Profile'}
+          </button>
         </form>
       </div>
     </div>

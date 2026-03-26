@@ -14,13 +14,7 @@ function StatCard({ num, label, trend }) {
 }
 
 export default function StudentDashboard() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState(null);
-
-  useEffect(() => {
-    if (!user || !supabase) return;
-    supabase.from('profiles').select('*').eq('id', user.id).single().then(({ data }) => { if (data) setProfile(data); });
-  }, [user]);
+  const { user, profile } = useAuth();
 
   const name = profile?.full_name?.split(' ')[0] || (user ? 'Engineer' : 'Preview');
 

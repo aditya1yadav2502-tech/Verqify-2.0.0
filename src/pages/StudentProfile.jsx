@@ -12,7 +12,12 @@ export default function StudentProfile() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const { data, error } = await supabase
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('username', username)

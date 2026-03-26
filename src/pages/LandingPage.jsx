@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import SkillFingerprint from '../components/SkillFingerprint';
 import SkillTag from '../components/SkillTag';
 import { supabase } from '../lib/supabaseClient';
@@ -30,7 +31,23 @@ function Problem({ num, text }) {
 export default function LandingPage() {
   const [stats, setStats] = useState({ engineers: 0, companies: 340, accuracy: 98 });
   const [featured, setFeatured] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [waitlistId, setWaitlistId] = useState('');
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+
+  const handleWaitlist = async (e) => {
+    e.preventDefault();
+    if (!waitlistId.trim()) { toast.error('Please enter your College ID'); return; }
+    if (!supabase) { toast.error('Supabase not connected'); return; }
+    setWaitlistLoading(true);
+    const { error } = await supabase.from('waitlist').insert({ college_id: waitlistId.trim() });
+    setWaitlistLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('You\'re on the list! We\'ll be in touch.');
+      setWaitlistId('');
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -51,7 +68,6 @@ export default function LandingPage() {
       if (count !== null) setStats(prev => ({ ...prev, engineers: count })); // Pure real count
       if (profiles && profiles.length > 0) setFeatured(profiles[0]);
       
-      setLoading(false);
     }
     fetchData();
   }, []);
@@ -106,68 +122,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Fingerprint preview */}
-      <section style={{ padding:'8rem 0', position:'relative' }}>
-        <div className="container">
-          <div style={{ textAlign:'center', marginBottom:'4rem' }}>
-            <div className="accent-line" style={{ margin:'0 auto 1.5rem' }} />
-            <h2 className="headline-lg animate-fade-in-up">The New Proof-of-Work.</h2>
-            <p style={{ color:'var(--text-secondary)', fontSize:'1.1rem', maxWidth:600, margin:'1rem auto 0' }}>
-              Your engineering identity is no longer a document. It's a verified signal generated from your raw contributions.
-            </p>
-          </div>
 
-          <div className="glass animate-fade-in-up delay-200" style={{ 
-            maxWidth:1000, margin:'0 auto', padding:'4rem', borderRadius:32,
-            display:'grid', gridTemplateColumns:'1fr 1.2fr', gap:'4rem', alignItems:'center',
-            boxShadow:'0 32px 80px rgba(99,102,241,0.08)'
-          }}>
-            {/* Left side: Metadata & Skills */}
-            <div>
-              <div style={{ marginBottom:'2.5rem' }}>
-                <span className="label" style={{ color:'var(--accent-indigo)', letterSpacing:'0.15em' }}>Verified Candidate</span>
-                <h3 style={{ fontFamily:'var(--font-head)', fontSize:'2.5rem', fontWeight:700, margin:'0.5rem 0' }}>
-                  {featured?.full_name || "Aditya Yadav"}
-                </h3>
-                <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'0.5rem' }}>
-                  <span className="badge badge-indigo">{featured?.major || "The Systems Architect"}</span>
-                </div>
-              </div>
-
-              <div style={{ marginBottom:'3rem' }}>
-                <p style={{ fontSize:'1.05rem', lineHeight:1.7, color:'var(--text-secondary)', marginBottom:'2rem' }}>
-                  "{featured?.bio || "I build high-throughput distributed systems. My fingerprint reflects a heavy density in Infrastructure and Database Design, backed by 400+ verified commits."}"
-                </p>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:'0.8rem' }}>
-                  <SkillTag name="Node.js" status="verified" />
-                  <SkillTag name="PostgreSQL" status="verified" />
-                  <SkillTag name="Kubernetes" status="demonstrated" />
-                  <SkillTag name="Redis" status="verified" />
-                  <SkillTag name="React" status="claimed" />
-                  <SkillTag name="System Design" status="demonstrated" />
-                </div>
-              </div>
-
-              {/* Distinction Legend */}
-              <div style={{ paddingTop:'2rem', borderTop:'1px solid var(--border)', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem' }}>
-                <div>
-                  <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:'0.25rem' }}>Verified ✓</div>
-                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Proven by direct Git commit SHA & deployment logs.</div>
-                </div>
-                <div>
-                  <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:'0.25rem' }}>Demonstrated ✦</div>
-                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Extracted from project context and complexity.</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right side: Fingerprint */}
-            <div style={{ display:'flex', justifyContent:'center', padding:'2rem', background:'radial-gradient(circle at center, rgba(99,102,241,0.03) 0%, transparent 70%)', borderRadius:24 }}>
-              <SkillFingerprint skills={featured?.skill_fingerprint || sampleSkills} size={420} />
-            </div>
-          </div>
-        </div>
-      </section>
 ...
 
 
@@ -216,10 +171,10 @@ export default function LandingPage() {
         <div className="container" style={{ textAlign:'center',position:'relative',zIndex:1 }}>
           <h2 className="headline-lg animate-fade-in-up" style={{ marginBottom:'1.25rem' }}>Prove what you can build.</h2>
           <p style={{ color:'var(--text-secondary)',fontSize:'1.1rem',maxWidth:500,margin:'0 auto 2.5rem' }}>The engineering shape is yours, forever.</p>
-          <div style={{ display:'flex',maxWidth:480,margin:'0 auto',gap:0 }}>
-            <input className="input" placeholder="Your College ID" style={{ borderRadius:'var(--radius-md) 0 0 var(--radius-md)',borderRight:'none' }} />
-            <button className="btn btn-primary" style={{ borderRadius:'0 var(--radius-md) var(--radius-md) 0',whiteSpace:'nowrap' }}>Join Waitlist</button>
-          </div>
+          <form onSubmit={handleWaitlist} style={{ display:'flex',maxWidth:480,margin:'0 auto',gap:0 }}>
+            <input className="input" placeholder="Your College ID" value={waitlistId} onChange={e => setWaitlistId(e.target.value)} style={{ borderRadius:'var(--radius-md) 0 0 var(--radius-md)',borderRight:'none' }} />
+            <button type="submit" disabled={waitlistLoading} className="btn btn-primary" style={{ borderRadius:'0 var(--radius-md) var(--radius-md) 0',whiteSpace:'nowrap' }}>{waitlistLoading ? 'Joining...' : 'Join Waitlist'}</button>
+          </form>
         </div>
       </section>
     </div>

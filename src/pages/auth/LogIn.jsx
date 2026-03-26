@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../../lib/supabaseClient';
-import { lookupStudent } from '../../lib/studentRegistry';
+
+const authRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
 
 const GithubIcon = () => (
   <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -12,10 +13,19 @@ const GithubIcon = () => (
 );
 
 export default function LogIn() {
-  const [step, setStep] = React.useState(1); // 1: ID, 2: OTP
-  const [collegeId, setCollegeId] = React.useState('');
+  const [step, setStep] = React.useState(1); // 1: details, 2: OTP
   const [otp, setOtp] = React.useState('');
-  const [foundStudent, setFoundStudent] = React.useState(null);
+  const [form, setForm] = React.useState({
+    collegeEmail: '',
+    fullName: '',
+    college: '',
+    branch: 'CSE',
+    yearOfStudy: '1st',
+  });
+
+  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const isCollegeEmail = (email) => /@.+\.(edu|ac\.[a-z]{2,})$/i.test(email.trim());
 
   const handleNext = async (e) => {
     e.preventDefault();
@@ -24,33 +34,49 @@ export default function LogIn() {
         toast.error("Supabase not connected. check .env");
         return;
       }
-      
-      const student = lookupStudent(collegeId);
-      if (student) setFoundStudent(student);
+      if (!form.fullName.trim()) { toast.error('Please enter your full name'); return; }
+      if (!form.college.trim()) { toast.error('Please enter your college name'); return; }
+
+      const normalizedEmail = form.collegeEmail.trim().toLowerCase();
+      if (!isCollegeEmail(normalizedEmail)) {
+        toast.error('Use a valid college email ID (e.g. name@college.edu)');
+        return;
+      }
 
       const { error } = await supabase.auth.signInWithOtp({
-        email: `${collegeId}@university.edu`, // Real implementation would use their registered email
+        email: normalizedEmail,
         options: {
           shouldCreateUser: false,
+          emailRedirectTo: authRedirectUrl,
         },
       });
 
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success(`OTP sent to ${collegeId}@university.edu`);
+        toast.success(`OTP sent to ${normalizedEmail}`);
         setStep(2);
       }
     } else {
-      const { error } = await supabase.auth.verifyOtp({
-        email: `${collegeId}@university.edu`,
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: form.collegeEmail.trim().toLowerCase(),
         token: otp,
-        type: 'magiclink' // Or 'signup' depending on how it was sent
+        type: 'email'
       });
 
       if (error) {
         toast.error(error.message);
       } else {
+        if (data?.user?.id) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            full_name: form.fullName.trim(),
+            college: form.college.trim(),
+            branch: form.branch,
+            year_of_study: form.yearOfStudy,
+            updated_at: new Date().toISOString(),
+          });
+        }
         toast.success('Welcome back!');
         window.location.href = '/dashboard';
       }
@@ -64,25 +90,68 @@ export default function LogIn() {
   return (
     <div>
       <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-        {foundStudent ? `Welcome back, ${foundStudent.full_name.split(' ')[0]}.` : 'Welcome Back.'}
+        Welcome Back.
       </h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-        {foundStudent ? `Recognized from ${foundStudent.college}` : 'Log in to your Verqify profile.'}
+        Log in to your Verqify profile.
       </p>
       <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }} onSubmit={handleNext}>
         {step === 1 ? (
           <>
-            <input className="input" type="text" placeholder="College ID" value={collegeId} onChange={e => setCollegeId(e.target.value)} required />
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Get OTP</button>
+            {/* Identity fields */}
+            <input
+              className="input"
+              type="text"
+              placeholder="Full Name"
+              value={form.fullName}
+              onChange={set('fullName')}
+              required
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="College / University"
+              value={form.college}
+              onChange={set('college')}
+              required
+            />
+            <select className="input" value={form.branch} onChange={set('branch')}>
+              <option value="CSE">CSE — Computer Science & Engineering</option>
+              <option value="ECE">ECE — Electronics & Communication</option>
+              <option value="IT">IT — Information Technology</option>
+              <option value="ME">ME — Mechanical Engineering</option>
+              <option value="CE">CE — Civil Engineering</option>
+              <option value="EE">EE — Electrical Engineering</option>
+              <option value="Other">Other</option>
+            </select>
+            <select className="input" value={form.yearOfStudy} onChange={set('yearOfStudy')}>
+              <option value="1st">1st Year</option>
+              <option value="2nd">2nd Year</option>
+              <option value="3rd">3rd Year</option>
+              <option value="4th">4th Year</option>
+              <option value="Alumni">Alumni</option>
+            </select>
+
+            {/* Auth field */}
+            <div style={{ height: '1px', background: 'var(--border)', margin: '0.25rem 0' }} />
+            <input
+              className="input"
+              type="email"
+              placeholder="College Email ID"
+              value={form.collegeEmail}
+              onChange={set('collegeEmail')}
+              required
+            />
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.25rem' }}>Get OTP →</button>
           </>
         ) : (
           <>
             <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Enter the code sent for <b>{collegeId}</b></span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Enter the code sent to <b>{form.collegeEmail}</b></span>
             </div>
             <input className="input" type="text" placeholder="6-digit OTP" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} required />
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Verify & Login</button>
-            <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>Change ID</button>
+            <button type="button" onClick={() => setStep(1)} className="btn btn-ghost" style={{ fontSize: '0.8rem' }}>← Go back</button>
           </>
         )}
       </form>

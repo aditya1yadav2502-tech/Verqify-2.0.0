@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SkillFingerprint from '../../components/SkillFingerprint';
 import { supabase } from '../../lib/supabaseClient';
 
-function CandidateCard({ name, headline, skills, match, fingerprint }) {
+function CandidateCard({ headline, skills, fingerprint }) {
   const displaySkills = Array.isArray(skills) ? skills : [];
   const displayFingerprint = Array.isArray(fingerprint) ? fingerprint : [
     { name: 'Backend', score: 20 }, { name: 'Database', score: 20 }, 
@@ -11,7 +11,7 @@ function CandidateCard({ name, headline, skills, match, fingerprint }) {
   return (
     <div className="glass" style={{ padding:'2rem',display:'flex',gap:'2.5rem',alignItems:'center' }}>
       <div style={{ width:110,height:110,background:'var(--bg-elevated)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative' }}>
-        <SkillFingerprint skills={fingerprint} size={100} />
+        <SkillFingerprint skills={displayFingerprint} size={100} />
       </div>
       <div style={{ flex:1 }}>
         <p style={{ color:'var(--text-secondary)',fontSize:'0.95rem',marginBottom:'1rem',lineHeight:1.5 }}>{headline || "Verified engineering candidate."}</p>
@@ -34,7 +34,7 @@ export default function CompanyDashboard() {
   useEffect(() => {
     async function fetchCandidates() {
       if (!supabase) return;
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('is_discoverable', true)
@@ -76,10 +76,8 @@ export default function CompanyDashboard() {
               {candidates.length > 0 ? candidates.map(c => (
                 <CandidateCard 
                   key={c.id}
-                  name={c.full_name} 
                   headline={c.bio}
                   skills={[]} // In a real app we'd compute this from the fingerprint
-                  match={Math.floor(Math.random() * 20 + 80) + "%"}
                   fingerprint={c.skill_fingerprint} 
                 />
               )) : (

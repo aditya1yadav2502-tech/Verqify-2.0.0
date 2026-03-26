@@ -1,3 +1,18 @@
+-- Create student registry table used during sign up / log in
+CREATE TABLE IF NOT EXISTS public.student_registry (
+  college_id TEXT PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  college TEXT NOT NULL,
+  major TEXT,
+  year TEXT,
+  avatar_url TEXT
+);
+
+ALTER TABLE public.student_registry ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Student registry is readable for auth flows." ON public.student_registry
+  FOR SELECT USING (true);
+
 -- Create a profiles table
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
@@ -8,6 +23,8 @@ CREATE TABLE public.profiles (
   skill_fingerprint JSONB, -- Stores the radar chart data
   bio TEXT,
   college TEXT,
+  branch TEXT,
+  year_of_study TEXT,
   is_discoverable BOOLEAN DEFAULT TRUE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -18,6 +35,11 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 -- Create policies
 CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles
   FOR SELECT USING (true);
+
+-- Backfill columns if table already existed without them
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS branch TEXT,
+  ADD COLUMN IF NOT EXISTS year_of_study TEXT;
 
 CREATE POLICY "Users can insert their own profile." ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
